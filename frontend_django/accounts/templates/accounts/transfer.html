@@ -1,0 +1,37 @@
+{% extends "accounts/base.html" %}
+{% block title %}Virement • AtlasBank{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 class="card-title">Effectuer un virement</h1>
+    <p class="card-sub">Du compte source vers un compte destinataire</p>
+
+    <form method="post" class="grid" style="gap:14px;" novalidate>
+        {% csrf_token %}
+
+        <div class="field">
+            <label for="id_from">Compte source</label>
+            <select id="id_from" name="from_account" required>
+                {% for acc in accounts %}
+                <option value="{{ acc.number }}">{{ acc.number }} ({{ acc.balance }} MAD)</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label for="id_to">Compte destinataire</label>
+            <input class="input" id="id_to" type="text" name="to_account" placeholder="ACC-..." required>
+        </div>
+
+        <div class="field">
+            <label for="id_amount">Montant</label>
+            <input class="input" id="id_amount" type="number" step="0.01" min="0.01" name="amount" required>
+        </div>
+
+        <div class="row" style="justify-content:flex-end;">
+            <button class="btn primary" type="submit">Envoyer</button>
+            <a class="btn ghost" href="{% url 'dashboard' %}">Retour</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% load static %}
+<nav class="nav">
+    <div class="container nav-inner">
+        <a class="brand" href="{% url 'dashboard' %}">
+            <img class="brand-logo" src="{% static 'accounts/img/atlaskbank-logo.svg' %}" alt="AtlasBank">
+            
+            <div class="brand-text">
+                <div class="brand-name">AtlasBank</div>
+                <div class="brand-tag">Secure • Modern • Distributed</div>
+            </div>
+        </a>
+
+        <div class="nav-actions">
+            {% if request.session.user %}
+            <div class="chip" title="Session utilisateur">
+                <span class="dot" aria-hidden="true"></span>
+                <span class="chip-text">{{ request.session.user.username }}</span>
+                <span class="chip-role">{{ request.session.user.role }}</span>
+            </div>
+
+            {% if request.session.user.role == "ADMIN" %}
+            <a class="btn ghost" href="{% url 'admin_stats' %}">Dashboard Admin</a>
+            <a class="btn ghost" href="{% url 'admin_users_list' %}">Utilisateurs</a>
+            <a class="btn ghost" href="{% url 'admin_all_transactions' %}">Transactions</a>
+            <a class="btn ghost" href="{% url 'admin_security_journal' %}">Journal sécurité</a>
+
+            {% elif request.session.user.role == "EMPLOYEE" %}
+            <a class="btn ghost" href="{% url 'admin_stats' %}">Dashboard</a>
+            <a class="btn ghost" href="{% url 'admin_all_transactions' %}">Transactions</a>
+            <a class="btn ghost" href="{% url 'admin_security_journal' %}">Journal sécurité</a>
+
+            {% else %}
+            <a class="btn ghost" href="{% url 'dashboard' %}">Mes comptes</a>
+            <a class="btn ghost" href="{% url 'create_account' %}">Créer un compte</a>
+            <a class="btn ghost" href="{% url 'transfer' %}">Virement</a>
+            <a class="btn ghost" href="{% url 'deposit' %}">Dépôt</a>
+            <a class="btn ghost" href="{% url 'withdraw' %}">Retrait</a>
+            {% endif %}
+
+            <a class="btn ghost" href="{% url 'my_account' %}">Mon compte</a>
+            <a class="btn danger" href="{% url 'logout' %}" data-confirm="Se déconnecter ?">Déconnexion</a>
+
+            {% else %}
+            <a class="btn ghost" href="{% url 'login' %}">Connexion</a>
+            <a class="btn primary" href="{% url 'register' %}">Créer un compte</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>

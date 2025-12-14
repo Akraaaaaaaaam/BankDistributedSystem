@@ -1,0 +1,48 @@
+{% extends "accounts/base.html" %}
+{% block title %}Comptes client {{ client_id }} • Admin • AtlasBank{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="row" style="align-items:center; justify-content:space-between;">
+        <div>
+            <h2 class="card-title">Comptes du client #{{ client_id }}</h2>
+            <p class="card-sub">Fermeture de compte côté admin</p>
+        </div>
+        <a class="btn ghost" href="{% url 'admin_users_list' %}">⬅ Retour</a>
+    </div>
+
+    <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Numéro</th>
+            <th>Solde</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for acc in accounts %}
+        <tr>
+            <td class="muted">{{ acc.id }}</td>
+            <td><strong>{{ acc.number|default:acc.account_number }}</strong></td>
+
+
+            <td>{{ acc.balance }}</td>
+            <td style="white-space:nowrap;">
+                <form method="post" action="{% url 'admin_close_account' acc.number|default:acc.account_number %}" style="display:inline;">
+
+                {% csrf_token %}
+                    <input type="hidden" name="next" value="{% url 'admin_client_accounts' client_id %}">
+                    <button class="btn danger" type="submit" data-confirm="Fermer ce compte ?">
+                        Fermer
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">Aucun compte trouvé pour ce client.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

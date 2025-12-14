@@ -1,0 +1,52 @@
+{% extends "accounts/base.html" %}
+{% block title %}Dashboard • AtlasBank{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 class="card-title">Bienvenue, {{ user.username }}</h1>
+    <p class="card-sub">Rôle : <strong>{{ user.role }}</strong></p>
+
+    {% if user.role == "CLIENT" %}
+    <div class="row" style="margin-top:10px;">
+        <a class="btn ghost" href="{% url 'create_account' %}">Créer un compte</a>
+        <a class="btn ghost" href="{% url 'transfer' %}">Virement</a>
+        <a class="btn ghost" href="{% url 'deposit' %}">Dépôt</a>
+        <a class="btn ghost" href="{% url 'withdraw' %}">Retrait</a>
+    </div>
+
+    <div class="spacer"></div>
+
+    <h2 class="card-title">Mes comptes</h2>
+    <p class="card-sub">Cliquez pour voir l’historique</p>
+
+    {% if accounts %}
+    <table class="table">
+        <thead>
+        <tr><th>ID</th><th>Compte</th><th>Solde</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for acc in accounts %}
+        <tr>
+            <td class="muted">{{ acc.id }}</td>
+            <td><strong>{{ acc.number }}</strong></td>
+            <td>{{ acc.balance }}</td>
+            <td style="white-space:nowrap;">
+                <a class="btn primary" href="{% url 'transactions' acc.number %}">Transactions</a>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Aucun compte trouvé.</p>
+    {% endif %}
+    {% else %}
+    <h2 class="card-title">Espace Administrateur</h2>
+    <p class="card-sub">Accéder à la gestion</p>
+    <div class="row" style="margin-top:10px;">
+        <a class="btn primary" href="{% url 'admin_stats' %}">Dashboard Admin</a>
+        <a class="btn ghost" href="{% url 'admin_users_list' %}">Utilisateurs</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

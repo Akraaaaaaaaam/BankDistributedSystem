@@ -1,0 +1,118 @@
+{% extends "accounts/base.html" %}
+{% block title %}Transactions • Admin • AtlasBank{% endblock %}
+
+{% block content %}
+
+<div class="grid cols-2">
+    <div class="card">
+        <h2 class="card-title">Journal global des transactions</h2>
+        <p class="card-sub">Filtres • pagination • export CSV</p>
+
+        <div class="row" style="margin-top:10px;">
+            <a class="btn ghost" href="{% url 'admin_stats' %}">Stats</a>
+            <a class="btn ghost" href="{% url 'admin_users_list' %}">Utilisateurs</a>
+
+            <a class="btn primary"
+               href="{% url 'admin_export_transactions_csv' %}?account={{ filters.account|urlencode }}&type={{ filters.type|urlencode }}&date_from={{ filters.date_from|urlencode }}&date_to={{ filters.date_to|urlencode }}">
+                Export CSV
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title">Filtres</h3>
+        <p class="card-sub">Compte / type / période</p>
+
+        <form method="get" class="row" novalidate>
+            <div class="field">
+                <label class="muted" for="f_account">Compte</label>
+                <input class="input" id="f_account" type="text" name="account" value="{{ filters.account }}" placeholder="ACC-...">
+            </div>
+
+            <div class="field">
+                <label class="muted" for="f_type">Type</label>
+                <select id="f_type" name="type">
+                    <option value="ALL" {% if filters.type == 'ALL' %}selected{% endif %}>Tous</option>
+                    <option value="DEPOSIT" {% if filters.type == 'DEPOSIT' %}selected{% endif %}>Dépôt</option>
+                    <option value="WITHDRAWAL" {% if filters.type == 'WITHDRAWAL' %}selected{% endif %}>Retrait</option>
+                    <option value="TRANSFER" {% if filters.type == 'TRANSFER' %}selected{% endif %}>Virement</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label class="muted" for="f_from">Du</label>
+                <input class="input" id="f_from" type="date" name="date_from" value="{{ filters.date_from }}">
+            </div>
+
+            <div class="field">
+                <label class="muted" for="f_to">Au</label>
+                <input class="input" id="f_to" type="date" name="date_to" value="{{ filters.date_to }}">
+            </div>
+
+            <div class="field" style="justify-content:flex-end">
+                <button class="btn primary" type="submit">Appliquer</button>
+                <a class="btn ghost" href="{% url 'admin_all_transactions' %}">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="spacer"></div>
+
+<div class="card">
+    <h3 class="card-title">Transactions</h3>
+    <p class="card-sub">Résultats paginés</p>
+
+    <table class="table">
+        <thead>
+        <tr>
+
+            <th>Compte</th>
+            <th>Agence</th>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Montant</th>
+            <th>Solde après</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for t in transactions %}
+        <tr>
+
+            <td><strong>{{ t.account }}</strong></td>
+            <td class="muted">{{ t.branch_name|default:"-" }}</td>
+            <td class="muted">{{ t.date_str }}</td>
+            <td><span class="badge">{{ t.type }}</span></td>
+            <td>{{ t.amount }}</td>
+            <td>{{ t.balance_after }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">Aucune transaction trouvée pour ces critères.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pager">
+        <span class="muted">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+
+        <div class="pager-actions">
+            {% if page_obj.has_previous %}
+            <a class="btn ghost"
+               href="?page={{ page_obj.previous_page_number }}&account={{ filters.account|urlencode }}&type={{ filters.type|urlencode }}&date_from={{ filters.date_from|urlencode }}&date_to={{ filters.date_to|urlencode }}">
+                ⬅ Précédente
+            </a>
+            {% endif %}
+
+            {% if page_obj.has_next %}
+            <a class="btn ghost"
+               href="?page={{ page_obj.next_page_number }}&account={{ filters.account|urlencode }}&type={{ filters.type|urlencode }}&date_from={{ filters.date_from|urlencode }}&date_to={{ filters.date_to|urlencode }}">
+                Suivante ➡
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

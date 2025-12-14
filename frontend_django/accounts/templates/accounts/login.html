@@ -1,0 +1,38 @@
+{% extends "accounts/base.html" %}
+{% block title %}Connexion • AtlasBank{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:560px; margin:0 auto;">
+    <h1 class="card-title">Connexion</h1>
+    <p class="card-sub">Accéder à votre espace</p>
+
+    {% if error %}
+    <div class="toast error">
+        <div class="toast-dot" aria-hidden="true"></div>
+        <div class="toast-body">{{ error }}</div>
+    </div>
+    {% endif %}
+
+    <form method="post" class="grid" style="gap:14px;" novalidate>
+        {% csrf_token %}
+
+        <div class="field">
+            <label for="id_username">Nom d'utilisateur</label>
+            <input class="input" id="id_username" type="text" name="username" required autocomplete="username">
+        </div>
+
+        <div class="field">
+            <label for="id_password">Mot de passe</label>
+            <input class="input" id="id_password" type="password" name="password" required autocomplete="current-password">
+        </div>
+
+        <div class="row" style="justify-content:flex-end;">
+            <button class="btn primary" type="submit">Se connecter</button>
+        </div>
+    </form>
+
+    <p class="muted" style="margin-top:12px;">
+        Pas de compte ? <a class="link" href="{% url 'register' %}"><strong>S'inscrire</strong></a>
+    </p>
+</div>
+{% endblock %}

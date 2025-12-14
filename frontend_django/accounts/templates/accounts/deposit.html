@@ -1,0 +1,32 @@
+{% extends "accounts/base.html" %}
+{% block title %}Dépôt • AtlasBank{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 class="card-title">Effectuer un dépôt</h1>
+    <p class="card-sub">Choisissez un compte et un montant</p>
+
+    <form method="post" class="grid" style="gap:14px;" novalidate>
+        {% csrf_token %}
+
+        <div class="field">
+            <label for="id_account">Compte</label>
+            <select id="id_account" name="account_number" required>
+                {% for acc in accounts %}
+                <option value="{{ acc.number }}">{{ acc.number }} ({{ acc.balance }} MAD)</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label for="id_amount">Montant</label>
+            <input class="input" id="id_amount" type="number" step="0.01" min="0.01" name="amount" required>
+        </div>
+
+        <div class="row" style="justify-content:flex-end;">
+            <button class="btn primary" type="submit">Valider</button>
+            <a class="btn ghost" href="{% url 'dashboard' %}">Retour</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

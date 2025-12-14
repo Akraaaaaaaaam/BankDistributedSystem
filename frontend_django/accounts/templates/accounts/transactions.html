@@ -1,0 +1,149 @@
+{% extends "accounts/base.html" %}
+{% block title %}Historique des transactions • AtlaBank{% endblock %}
+
+{% block content %}
+
+<div class="grid cols-2">
+    <div class="card">
+        <h2 class="card-title">Historique — {{ account_number }}</h2>
+        <p class="card-sub">Filtres + statistiques + export CSV</p>
+
+        <form method="get" class="row">
+            <div class="field">
+                <label class="muted">Date début</label>
+                <input class="input" type="date" name="date_from" value="{{ filters.date_from }}">
+            </div>
+
+            <div class="field">
+                <label class="muted">Date fin</label>
+                <input class="input" type="date" name="date_to" value="{{ filters.date_to }}">
+            </div>
+
+            <div class="field">
+                <label class="muted">Type</label>
+                <select name="type">
+                    <option value="ALL"{% if filters.type == 'ALL' %} selected{% endif %}>Tous</option>
+                    <option value="DEPOSIT"{% if filters.type == 'DEPOSIT' %} selected{% endif %}>Dépôt</option>
+                    <option value="WITHDRAWAL"{% if filters.type == 'WITHDRAWAL' %} selected{% endif %}>Retrait</option>
+                    <option value="TRANSFER"{% if filters.type == 'TRANSFER' %} selected{% endif %}>Virement</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label class="muted">Montant min</label>
+                <input class="input" type="number" step="0.01" name="amount_min" value="{{ filters.amount_min }}">
+            </div>
+
+            <div class="field">
+                <label class="muted">Montant max</label>
+                <input class="input" type="number" step="0.01" name="amount_max" value="{{ filters.amount_max }}">
+            </div>
+
+            <div class="field">
+                <label class="muted">Tri</label>
+                <select name="order">
+                    <option value="date_desc"{% if filters.order == 'date_desc' %} selected{% endif %}>Date (récent)</option>
+                    <option value="date_asc"{% if filters.order == 'date_asc' %} selected{% endif %}>Date (ancien)</option>
+                    <option value="amount_desc"{% if filters.order == 'amount_desc' %} selected{% endif %}>Montant (↓)</option>
+                    <option value="amount_asc"{% if filters.order == 'amount_asc' %} selected{% endif %}>Montant (↑)</option>
+                </select>
+            </div>
+
+            <div class="field" style="justify-content:flex-end">
+                <button class="btn primary" type="submit">Appliquer</button>
+                <a class="btn ghost" href="{% url 'transactions' account_number %}">Reset</a>
+                <a class="btn ghost" href="{% url 'export_transactions_csv' account_number %}?date_from={{ filters.date_from }}&date_to={{ filters.date_to }}&type={{ filters.type }}&order={{ filters.order }}&amount_min={{ filters.amount_min }}&amount_max={{ filters.amount_max }}">Export CSV</a>
+            </div>
+        </form>
+
+        <div style="height:14px"></div>
+
+        <div class="grid cols-2">
+            <div class="card" style="box-shadow:none;">
+                <h3 class="card-title" style="font-size:16px;">Résumé</h3>
+                <p class="muted" style="margin:0;">
+                    Total opérations: <strong>{{ stats.total_count }}</strong><br>
+                    Total montant: <strong>{{ stats.total_amount }}</strong><br>
+                    Solde début: <strong>{{ stats.first_balance|default:"-" }}</strong><br>
+                    Solde fin: <strong>{{ stats.last_balance|default:"-" }}</strong>
+                </p>
+            </div>
+            <div class="card" style="box-shadow:none;">
+                <h3 class="card-title" style="font-size:16px;">Par type</h3>
+                <p class="muted" style="margin:0;">
+                    DEPOT: {{ stats.by_type.DEPOSIT.count }} / {{ stats.by_type.DEPOSIT.sum }}<br>
+                    RETRAIT: {{ stats.by_type.WITHDRAWAL.count }} / {{ stats.by_type.WITHDRAWAL.sum }}<br>
+                    VIREMENT: {{ stats.by_type.TRANSFER.count }} / {{ stats.by_type.TRANSFER.sum }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 class="card-title">Graphiques</h2>
+        <p class="card-sub">Montant par type + évolution du solde</p>
+
+        <canvas id="chartByType" height="140"></canvas>
+        <div style="height:14px"></div>
+        <canvas id="chartBalance" height="140"></canvas>
+    </div>
+</div>
+
+<div style="height:14px"></div>
+
+<div class="card">
+    <h2 class="card-title">Détail des transactions</h2>
+
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Montant</th>
+            <th>Solde après</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for t in transactions %}
+        <tr>
+            <td class="muted">{{ t.date_str }}</td>
+            <td><span class="badge">{{ t.type }}</span></td>
+            <td>{{ t.amount }}</td>
+            <td>{{ t.balance_after }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">Aucune transaction.</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{{ chart_labels|json_script:"labelsByType" }}
+{{ chart_values|json_script:"valuesByType" }}
+{{ balance_labels|json_script:"labelsBalance" }}
+{{ balance_values|json_script:"valuesBalance" }}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const labelsByType = JSON.parse(document.getElementById("labelsByType").textContent);
+    const valuesByType = JSON.parse(document.getElementById("valuesByType").textContent);
+    const labelsBalance = JSON.parse(document.getElementById("labelsBalance").textContent);
+    const valuesBalance = JSON.parse(document.getElementById("valuesBalance").textContent);
+
+    new Chart(document.getElementById("chartByType"), {
+      type: "bar",
+      data: { labels: labelsByType, datasets: [{ label: "Total", data: valuesByType }] },
+      options: { responsive:true }
+    });
+
+    new Chart(document.getElementById("chartBalance"), {
+      type: "line",
+      data: { labels: labelsBalance, datasets: [{ label: "Solde", data: valuesBalance, tension: 0.35 }] },
+      options: { responsive:true }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "accounts/base.html" %}
+{% block title %}Créer un compte • AtlasBank{% endblock %}
+
+{% block content %}
+<div class="grid cols-2">
+    <div class="card">
+        <h2 class="card-title">Vos comptes existants</h2>
+        <p class="card-sub">Vue rapide avant création</p>
+
+        {% if accounts %}
+        <table class="table">
+            <thead><tr><th>Numéro</th><th>Solde</th></tr></thead>
+            <tbody>
+            {% for acc in accounts %}
+            <tr>
+                <td><strong>{{ acc.number }}</strong></td>
+                <td>{{ acc.balance }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">Aucun compte pour le moment.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2 class="card-title">Créer un nouveau compte</h2>
+        <p class="card-sub">Choisissez type, devise et agence</p>
+
+        <form method="post" class="grid" style="gap:14px;" novalidate>
+            {% csrf_token %}
+
+            <div class="field">
+                <label for="id_type">Type de compte</label>
+                <select id="id_type" name="type">
+                    <option value="CHECKING">Compte courant (CHECKING)</option>
+                    <option value="SAVINGS">Compte épargne (SAVINGS)</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="id_currency">Devise</label>
+                <select id="id_currency" name="currency">
+                    <option value="MAD">MAD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="USD">USD</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="id_branch">Agence</label>
+                <select id="id_branch" name="branch_id" required>
+                    <option value="">-- Sélectionnez une agence --</option>
+                    {% for b in branches %}
+                    <option value="{{ b.id }}">{{ b.code }} - {{ b.name }} ({{ b.city }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="row" style="justify-content:flex-end;">
+                <button class="btn primary" type="submit">Créer</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,151 @@
+{% extends "accounts/base.html" %}
+{% load static %}
+
+{% block title %}Tableau de bord global • Admin • AtlasBank{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>Tableau de bord global (ADMIN)</h1>
+</div>
+
+<section class="kpi-grid">
+    <article class="kpi card">
+        <div class="kpi-label">Utilisateurs</div>
+        <div class="kpi-value">{{ stats.total_users|default:"-" }}</div>
+        <div class="kpi-sub">Clients: {{ stats.total_clients|default:"-" }} • Admins: {{ stats.total_admins|default:"-" }}</div>
+    </article>
+
+    <article class="kpi card">
+        <div class="kpi-label">Agences</div>
+        <div class="kpi-value">{{ stats.total_branches|default:"-" }}</div>
+        <div class="kpi-sub">Nombre total d'agences</div>
+    </article>
+
+    <article class="kpi card">
+        <div class="kpi-label">Comptes actifs</div>
+        <div class="kpi-value">{{ stats.active_accounts|default:"-" }}</div>
+        <div class="kpi-sub">Fermés: {{ stats.closed_accounts|default:"-" }}</div>
+    </article>
+
+    <article class="kpi card">
+        <div class="kpi-label">Opérations (période)</div>
+        <div class="kpi-value">{{ period_stats.total_transactions|default:"0" }}</div>
+        <div class="kpi-sub">Montant: {{ period_stats.total_amount|floatformat:2 }}</div>
+    </article>
+</section>
+
+<form method="get" class="card filter-card" novalidate>
+    <div class="filter-head">
+        <h3 class="card-title">Filtre par période</h3>
+        <p class="card-sub">Opérations</p>
+    </div>
+
+    <div class="form-grid">
+        <div class="field">
+            <label for="date_from">Du</label>
+            <input class="input" id="date_from" type="date" name="date_from" value="{{ period.date_from }}">
+        </div>
+
+        <div class="field">
+            <label for="date_to">Au</label>
+            <input class="input" id="date_to" type="date" name="date_to" value="{{ period.date_to }}">
+        </div>
+    </div>
+
+    <div class="filter-actions">
+        <button class="btn primary" type="submit">Appliquer</button>
+        <a class="btn ghost" href="{% url 'admin_stats' %}">Réinitialiser</a>
+    </div>
+</form>
+
+<section class="card">
+    <div class="card-head">
+        <h2>Statistiques globales (période filtrée)</h2>
+        <span class="muted">Détails par type</span>
+    </div>
+
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Type d'opération</th>
+            <th>Nombre</th>
+            <th>Montant total</th>
+            <th>Montant moyen</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>Dépôts (DEPOSIT)</td>
+            <td>{{ period_stats.by_type.DEPOSIT.count }}</td>
+            <td>{{ period_stats.by_type.DEPOSIT.sum }}</td>
+            <td>{{ period_stats.by_type.DEPOSIT.avg|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td>Retraits (WITHDRAWAL)</td>
+            <td>{{ period_stats.by_type.WITHDRAWAL.count }}</td>
+            <td>{{ period_stats.by_type.WITHDRAWAL.sum }}</td>
+            <td>{{ period_stats.by_type.WITHDRAWAL.avg|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td>Virements (TRANSFER)</td>
+            <td>{{ period_stats.by_type.TRANSFER.count }}</td>
+            <td>{{ period_stats.by_type.TRANSFER.sum }}</td>
+            <td>{{ period_stats.by_type.TRANSFER.avg|floatformat:2 }}</td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+<br>
+<section class="grid-2">
+    <article class="card chart-card">
+        <div class="card-head">
+            <h2>Répartition par type</h2>
+            <span class="muted">Donut (montants)</span>
+        </div>
+        <div class="chart-wrap">
+            <canvas id="chartByType"></canvas>
+        </div>
+    </article>
+
+    <article class="card chart-card">
+        <div class="card-head">
+            <h2>Volume par agence</h2>
+            <span class="muted">Bar (période)</span>
+        </div>
+        <div class="chart-wrap">
+            <canvas id="chartByBranch"></canvas>
+        </div>
+    </article>
+</section>
+
+{{ chart_labels_json|json_script:"chartLabels" }}
+{{ chart_values_json|json_script:"chartValues" }}
+{{ branch_labels_json|json_script:"branchLabels" }}
+{{ branch_values_json|json_script:"branchValues" }}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // (Optionnel) refresh soft
+    setTimeout(() => window.location.reload(), 30000);
+
+    const chartLabels = JSON.parse(document.getElementById("chartLabels").textContent || "[]");
+    const chartValues = JSON.parse(document.getElementById("chartValues").textContent || "[]");
+    const branchLabels = JSON.parse(document.getElementById("branchLabels").textContent || "[]");
+    const branchValues = JSON.parse(document.getElementById("branchValues").textContent || "[]");
+
+    new Chart(document.getElementById("chartByType"), {
+      type: "doughnut",
+      data: { labels: chartLabels, datasets: [{ label: "Montant total", data: chartValues }] },
+      options: { responsive:true, maintainAspectRatio:false, cutout:"62%", animation:{ duration:700 }, plugins:{ legend:{ position:"top" } } }
+    });
+
+    new Chart(document.getElementById("chartByBranch"), {
+      type: "bar",
+      data: { labels: branchLabels, datasets: [{ label: "Montant total (période)", data: branchValues }] },
+      options: { responsive:true, maintainAspectRatio:false, animation:{ duration:700 } }
+    });
+</script>
+{% endblock %}

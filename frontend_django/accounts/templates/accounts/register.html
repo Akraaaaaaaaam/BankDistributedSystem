@@ -1,0 +1,22 @@
+{% extends "accounts/base.html" %}
+{% block title %}Inscription • AtlasBank{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:720px; margin:0 auto;">
+    <h1 class="card-title">Inscription</h1>
+    <p class="card-sub">Créer un compte client</p>
+
+    <form method="post" class="grid" style="gap:14px;" novalidate>
+        {% csrf_token %}
+
+        <div class="grid" style="gap:12px;">
+            {{ form.as_p }}
+        </div>
+
+        <div class="row" style="justify-content:flex-end;">
+            <button class="btn primary" type="submit">S'inscrire</button>
+            <a class="btn ghost" href="{% url 'login' %}">Déjà inscrit ?</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

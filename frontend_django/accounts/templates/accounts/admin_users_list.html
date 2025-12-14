@@ -1,0 +1,134 @@
+{% extends "accounts/base.html" %}
+{% block title %}Utilisateurs • Admin • AtlasBank{% endblock %}
+
+{% block content %}
+
+<div class="grid cols-3">
+    <div class="card">
+        <h3 class="card-title">Utilisateurs</h3>
+        <p class="card-sub">Gestion des comptes et statuts</p>
+        <div class="muted">
+            Total : <strong>{{ total_users }}</strong><br>
+            Admins : <strong>{{ total_admins }}</strong><br>
+            Clients : <strong>{{ total_clients }}</strong>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title">Statuts</h3>
+        <p class="card-sub">Actifs / inactifs</p>
+        <div class="muted">
+            Actifs : <strong>{{ active_count }}</strong><br>
+            Inactifs : <strong>{{ inactive_count }}</strong>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title">Actions</h3>
+        <p class="card-sub">Raccourcis admin</p>
+        <div class="row" style="margin-top:10px;">
+            <a class="btn ghost" href="{% url 'admin_stats' %}">Stats</a>
+            <a class="btn ghost" href="{% url 'admin_all_transactions' %}">Transactions</a>
+            <a class="btn primary" href="{% url 'admin_create_admin' %}">+ Créer admin</a>
+
+        </div>
+    </div>
+
+</div>
+
+<div class="spacer"></div>
+
+<div class="card">
+    <h2 class="card-title">Recherche / Filtres</h2>
+    <p class="card-sub">Filtrer par username, rôle et statut</p>
+
+    <form method="get" class="row" novalidate>
+        <div class="field">
+            <label class="muted" for="q">Recherche</label>
+            <input class="input" id="q" type="text" name="q" value="{{ q }}" placeholder="admin, client1, ...">
+        </div>
+
+        <div class="field">
+            <label class="muted" for="role">Rôle</label>
+            <select id="role" name="role">
+                <option value="ALL" {% if role_filter == "ALL" %}selected{% endif %}>Tous</option>
+                <option value="CLIENT" {% if role_filter == "CLIENT" %}selected{% endif %}>Client</option>
+                <option value="ADMIN" {% if role_filter == "ADMIN" %}selected{% endif %}>Admin</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label class="muted" for="active">Statut</label>
+            <select id="active" name="active">
+                <option value="ALL" {% if active_filter == "ALL" %}selected{% endif %}>Tous</option>
+                <option value="true" {% if active_filter == "true" %}selected{% endif %}>Actifs</option>
+                <option value="false" {% if active_filter == "false" %}selected{% endif %}>Inactifs</option>
+            </select>
+        </div>
+
+        <div class="field" style="justify-content:flex-end">
+            <button class="btn primary" type="submit">Filtrer</button>
+            <a class="btn ghost" href="{% url 'admin_users_list' %}">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="spacer"></div>
+
+<div class="card">
+    <h2 class="card-title">Liste des utilisateurs</h2>
+    <p class="card-sub">Voir comptes (clients) + activer/désactiver</p>
+
+    <table class="table">
+        <thead>
+        <tr>
+
+            <th>Username</th>
+            <th>Rôle</th>
+            <th>Statut</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for u in users %}
+        <tr>
+            <td><strong>{{ u.username }}</strong></td>
+            <td><span class="badge">{{ u.role }}</span></td>
+            <td>
+                {% if u.active %}
+                <span class="badge">Actif</span>
+                {% else %}
+                <span class="badge">Inactif</span>
+                {% endif %}
+            </td>
+            <td style="white-space:nowrap;">
+                {% if u.client_id %}
+                <a class="btn ghost" href="{% url 'admin_client_accounts' u.client_id %}">Comptes</a>
+                {% endif %}
+
+                {% if u.active %}
+                <a class="btn danger" href="{% url 'admin_set_user_active' u.id %}?action=deactivate"
+                   data-confirm="Désactiver cet utilisateur ?">Désactiver</a>
+                {% else %}
+                <a class="btn primary" href="{% url 'admin_set_user_active' u.id %}?action=activate"
+                   data-confirm="Activer cet utilisateur ?">Activer</a>
+                {% endif %}
+
+                {# ✅ Reset password (super-admin uniquement) #}
+                {% if user.is_super_admin %}
+                <a class="btn ghost" href="{% url 'admin_reset_password' u.id %}"
+                   data-confirm="Réinitialiser le mot de passe de cet utilisateur ?">
+                    Reset password
+                </a>
+                {% endif %}
+            </td>
+
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">Aucun utilisateur trouvé.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

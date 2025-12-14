@@ -1,0 +1,84 @@
+{% extends "accounts/base.html" %}
+{% block title %}Mon compte • AtlasBank{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:860px; margin:0 auto;">
+    <h1 class="card-title">Mon compte</h1>
+    <p class="card-sub">Mettre à jour vos informations</p>
+
+    <div class="grid cols-2" style="gap:14px; margin-top:10px;">
+        <div class="card" style="box-shadow:none;">
+            <div class="muted">Utilisateur</div>
+            <div style="margin-top:6px;">
+                <div><strong>Rôle :</strong> {{ user.role }}</div>
+                <div><strong>Statut :</strong> {% if profile.active %}Actif{% else %}Inactif{% endif %}</div>
+                {% if profile.client_type %}
+                <div><strong>Client type :</strong> {{ profile.client_type }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card" style="box-shadow:none;">
+            <div class="muted">Identifiants</div>
+            <div style="margin-top:6px;">
+                <div><strong>Username actuel :</strong> {{ user.username }}</div>
+                {% if profile.cin %}
+                <div><strong>CIN :</strong> {{ profile.cin }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div style="height:14px;"></div>
+
+    <form method="post" class="grid" style="gap:14px;" novalidate>
+        {% csrf_token %}
+
+        <div class="field">
+            <label for="id_username">Nom d'utilisateur</label>
+            <input class="input" id="id_username" name="username" value="{{ profile.username|default:user.username }}" required>
+            <div class="muted" style="font-size:12px; margin-top:6px;">3-50 caractères: lettres/chiffres/._-</div>
+        </div>
+
+        {% if user.role == "CLIENT" %}
+        <div class="grid cols-2">
+            <div class="field">
+                <label for="id_first_name">Prénom</label>
+                <input class="input" id="id_first_name" name="first_name" value="{{ profile.first_name|default:'' }}">
+            </div>
+            <div class="field">
+                <label for="id_last_name">Nom</label>
+                <input class="input" id="id_last_name" name="last_name" value="{{ profile.last_name|default:'' }}">
+            </div>
+        </div>
+
+        <div class="grid cols-2">
+            <div class="field">
+                <label for="id_email">Email</label>
+                <input class="input" id="id_email" name="email" type="email" value="{{ profile.email|default:'' }}">
+            </div>
+            <div class="field">
+                <label for="id_phone">Téléphone</label>
+                <input class="input" id="id_phone" name="phone" value="{{ profile.phone|default:'' }}">
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="id_address">Adresse</label>
+            <input class="input" id="id_address" name="address" value="{{ profile.address|default:'' }}">
+        </div>
+        {% else %}
+        <input type="hidden" name="first_name" value="-">
+        <input type="hidden" name="last_name" value="-">
+        <input type="hidden" name="email" value="-">
+        <input type="hidden" name="phone" value="-">
+        <input type="hidden" name="address" value="-">
+        {% endif %}
+
+        <div class="row" style="justify-content:flex-end; margin-top:6px;">
+            <button class="btn primary" type="submit">Enregistrer</button>
+            <a class="btn ghost" href="{% url 'dashboard' %}">Retour</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

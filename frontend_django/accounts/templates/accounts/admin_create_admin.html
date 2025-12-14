@@ -1,0 +1,38 @@
+{% extends "accounts/base.html" %}
+{% block title %}Créer un administrateur • AtlasBank{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 class="card-title">Créer un administrateur</h1>
+    <p class="card-sub">Créer un nouveau compte administrateur.</p>
+
+    <div class="row" style="margin:10px 0 14px;">
+        <a class="btn ghost" href="{% url 'admin_users_list' %}">Retour</a>
+    </div>
+
+    <form method="post" class="grid" style="gap:14px;" novalidate>
+        {% csrf_token %}
+
+        <div class="field">
+            <label for="id_username">Nom d’utilisateur</label>
+            <input class="input" id="id_username" type="text" name="username" required autocomplete="username">
+        </div>
+
+        <div class="grid cols-2">
+            <div class="field">
+                <label for="id_password1">Mot de passe</label>
+                <input class="input" id="id_password1" type="password" name="password1" required autocomplete="new-password">
+            </div>
+
+            <div class="field">
+                <label for="id_password2">Confirmer le mot de passe</label>
+                <input class="input" id="id_password2" type="password" name="password2" required autocomplete="new-password">
+            </div>
+        </div>
+
+        <div class="row" style="justify-content:flex-end; margin-top:6px;">
+            <button class="btn primary" type="submit">Créer</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

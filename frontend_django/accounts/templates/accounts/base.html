@@ -1,0 +1,35 @@
+{% load static %}
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}AtlasBank{% endblock %}</title>
+
+    <link rel="icon" href="{% static 'accounts/img/atlaskbank-logo.svg' %}">
+    <link rel="stylesheet" href="{% static 'accounts/css/app.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+<div class="app">
+    {% include "accounts/partials/_nav.html" %}
+
+    <main class="container">
+        {% include "accounts/partials/_messages.html" %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-inner">
+            <span>© {% now "Y" %} AtlasBank</span>
+            <span class="muted">Bank Distributed System • Django + Java RMI + MySQL</span>
+        </div>
+    </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'accounts/js/app.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

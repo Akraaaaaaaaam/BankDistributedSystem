@@ -1,0 +1,32 @@
+# Python / Django
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+venv/
+.env/
+db.sqlite3
+staticfiles/
+
+# Django secrets
+*.log
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+target/
+bin/
+out/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
