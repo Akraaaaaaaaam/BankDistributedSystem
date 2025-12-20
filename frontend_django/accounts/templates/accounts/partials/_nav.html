@@ -3,10 +3,10 @@
     <div class="container nav-inner">
         <a class="brand" href="{% url 'dashboard' %}">
             <img class="brand-logo" src="{% static 'accounts/img/atlaskbank-logo.svg' %}" alt="AtlasBank">
-            
+
             <div class="brand-text">
                 <div class="brand-name">AtlasBank</div>
-                <div class="brand-tag">Secure • Modern • Distributed</div>
+                <div class="brand-tag">Bank 100% Maghribia</div>
             </div>
         </a>
 
@@ -30,7 +30,7 @@
             <a class="btn ghost" href="{% url 'admin_security_journal' %}">Journal sécurité</a>
 
             {% else %}
-            <a class="btn ghost" href="{% url 'dashboard' %}">Mes comptes</a>
+            <a class="btn ghost" href="{% url 'dashboard' %}">Mes comptes bancaires</a>
             <a class="btn ghost" href="{% url 'create_account' %}">Créer un compte</a>
             <a class="btn ghost" href="{% url 'transfer' %}">Virement</a>
             <a class="btn ghost" href="{% url 'deposit' %}">Dépôt</a>

@@ -17,7 +17,7 @@ public class UserDTO implements Serializable {
 
     public UserDTO() {}
 
-    // Ancien constructeur (compat)
+
     public UserDTO(int id, Integer clientId, String username, String role, boolean active) {
         this.id = id;
         this.clientId = clientId;
@@ -32,7 +32,7 @@ public class UserDTO implements Serializable {
         this(id, clientId, username, role, true);
     }
 
-    // NEW constructeur complet
+
     public UserDTO(int id, Integer clientId, String username, String role, boolean active, boolean superAdmin, Integer createdBy) {
         this.id = id;
         this.clientId = clientId;

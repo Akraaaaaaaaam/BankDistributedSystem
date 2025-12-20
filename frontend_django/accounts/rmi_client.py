@@ -11,7 +11,7 @@ PROJECT_ROOT = os.path.dirname(BASE_DIR)
 JAVA_BIN = os.environ.get("JAVA_BIN", "java")
 JAVA_TIMEOUT_SEC = int(os.environ.get("JAVA_TIMEOUT_SEC", "20"))
 
-# IMPORTANT: os.pathsep => ";" sur Windows, ":" sur Linux/Mac
+
 JAVA_CLASSPATH = os.pathsep.join(
     [
         os.path.join(PROJECT_ROOT, "out", "production", "BankDistributedSystem"),
@@ -23,10 +23,7 @@ JAVA_MAIN_CLASS = "ma.fsa.bank.client.RmiClient"
 
 
 def _extract_json(text: str) -> Optional[str]:
-    """
-    Extrait le premier JSON objet {...} de la sortie Java.
-    On cherche le premier '{' et le dernier '}' pour tolérer logs avant/après.
-    """
+
     if not text:
         return None
 
@@ -37,7 +34,7 @@ def _extract_json(text: str) -> Optional[str]:
 
     raw = text[start : end + 1]
 
-    # Nettoyage caractères de contrôle (évite JSONDecodeError)
+
     cleaned_chars = []
     for ch in raw:
         cleaned_chars.append(" " if ord(ch) < 32 else ch)
@@ -45,12 +42,7 @@ def _extract_json(text: str) -> Optional[str]:
 
 
 def call_rmi(args_list: List[str]) -> Dict[str, Any]:
-    """
-    Appelle le client Java RMI et retourne un dict JSON.
-    Convention:
-      - en cas succès => {"success": True, ...}
-      - sinon => {"success": False, "error": "...", ...}
-    """
+
     cmd = [JAVA_BIN, "-cp", JAVA_CLASSPATH, JAVA_MAIN_CLASS] + args_list
 
     try:
@@ -86,9 +78,7 @@ def call_rmi(args_list: List[str]) -> Dict[str, Any]:
         return {"success": False, "error": str(e)}
 
 
-# ==========================
-# Wrappers RMI
-# ==========================
+
 
 def create_account(client_id: int, acc_type: str, currency: str, branch_id: int):
     return call_rmi(["create_account", str(client_id), str(branch_id), acc_type, currency])
@@ -102,8 +92,28 @@ def login(username: str, password: str):
     return call_rmi(["login", username, password])
 
 
-def register(username: str, password: str):
-    return call_rmi(["register", username, password])
+def register(username: str, password: str, branch_id: int,
+             first_name: str, last_name: str, cin: str,
+             email: str = "", phone: str = "", address: str = ""):
+
+    def norm(v: str) -> str:
+        v = (v or "").strip()
+        return v if v else "-"
+
+
+    return call_rmi([
+        "register",
+        norm(username),
+        norm(password),
+        str(branch_id),
+        norm(first_name),
+        norm(last_name),
+        norm(cin),
+        norm(email),
+        norm(phone),
+        norm(address),
+    ])
+
 
 
 def transfer(from_account: str, to_account: str, amount: float):
@@ -169,7 +179,7 @@ def get_user_profile(user_id: int):
 
 
 def update_user_profile(user_id: int, username: str, first_name: str, last_name: str, email: str, phone: str, address: str):
-    # convention: "-" => null côté Java
+
     def norm(v: str) -> str:
         v = (v or "").strip()
         return v if v else "-"

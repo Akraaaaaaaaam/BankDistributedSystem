@@ -6,7 +6,7 @@
 <div class="grid cols-2">
     <div class="card">
         <h2 class="card-title">Historique — {{ account_number }}</h2>
-        <p class="card-sub">Filtres + statistiques + export CSV</p>
+        <p class="card-sub">Stats et export CSV</p>
 
         <form method="get" class="row">
             <div class="field">
@@ -81,10 +81,11 @@
 
     <div class="card">
         <h2 class="card-title">Graphiques</h2>
-        <p class="card-sub">Montant par type + évolution du solde</p>
+        <p class="card-sub">Montant par type</p>
 
         <canvas id="chartByType" height="140"></canvas>
         <div style="height:14px"></div>
+        <p class="card-sub"> Evolution du solde</p>
         <canvas id="chartBalance" height="140"></canvas>
     </div>
 </div>

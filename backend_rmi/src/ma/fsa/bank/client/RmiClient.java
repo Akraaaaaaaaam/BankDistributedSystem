@@ -24,7 +24,7 @@ public class RmiClient {
         String command = args[0];
 
         try {
-            // (optionnel) permettre override via variables d'env si un jour tu déploies
+
             String host = getEnvOrDefault("BANK_RMI_HOST", DEFAULT_HOST);
             int port = parseIntSafe(getEnvOrDefault("BANK_RMI_PORT", String.valueOf(DEFAULT_PORT)), DEFAULT_PORT);
 
@@ -42,9 +42,7 @@ public class RmiClient {
                     System.out.println("{\"success\":" + ok + "}");
                     break;
                 }
-                // ==============================
-                // Mon compte (profil user)
-                // ==============================
+
 
                 case "get_user_profile": {
                     requireArgs(args, 2, "Usage: get_user_profile <userId>");
@@ -81,7 +79,6 @@ public class RmiClient {
                 }
 
                 case "update_user_profile": {
-                    // Usage: update_user_profile <userId> <username> <first_name> <last_name> <email> <phone> <address...>
                     requireArgs(args, 8, "Usage: update_user_profile <userId> <username> <first_name> <last_name> <email> <phone> <address>");
                     int userId = parseIntStrict(args[1], "userId");
                     String username = args[2];
@@ -90,7 +87,7 @@ public class RmiClient {
                     String email = args[5];
                     String phone = args[6];
 
-                    // address peut contenir des espaces => on joint le reste
+
                     StringBuilder addr = new StringBuilder();
                     for (int i = 7; i < args.length; i++) {
                         if (i > 7) addr.append(" ");
@@ -98,7 +95,7 @@ public class RmiClient {
                     }
                     String address = addr.toString();
 
-                    // conventions: "-" => null
+
                     if ("-".equals(firstName)) firstName = null;
                     if ("-".equals(lastName)) lastName = null;
                     if ("-".equals(email)) email = null;
@@ -169,17 +166,26 @@ public class RmiClient {
                 }
 
                 case "register": {
-                    requireArgs(args, 3, "Usage: register <username> <password>");
+                    requireArgs(args, 10, "Usage: register <username> <password> <branchId> <firstName> <lastName> <cin> <email|-> <phone|-> <address|->");
+
                     String username = args[1];
                     String password = args[2];
+                    int branchId = parseIntStrict(args[3], "branchId");
+                    String firstName = args[4];
+                    String lastName  = args[5];
+                    String cin       = args[6];
+                    String email     = args[7];
+                    String phone     = args[8];
+                    String address   = args[9];
 
-                    RegisterRequest req = new RegisterRequest(username, password);
+                    RegisterRequest req = new RegisterRequest(username, password, branchId, firstName, lastName, cin, email, phone, address);
                     RegisterResponse resp = service.registerUser(req);
 
                     System.out.println("{\"success\":" + resp.isSuccess() +
                             ",\"message\":\"" + escapeJson(resp.getMessage()) + "\"}");
                     break;
                 }
+
                 case "admin_reset_password": {
                     requireArgs(args, 4, "Usage: admin_reset_password <actorUserId> <targetUserId> <newPassword>");
                     int actorId = parseIntStrict(args[1], "actorUserId");
@@ -240,7 +246,7 @@ public class RmiClient {
                     break;
                 }
 
-                // ---------- Commandes compte ----------
+
 
                 case "create_account": {
                     requireArgs(args, 5, "Usage: create_account <clientId> <branchId> <type> <currency>");
@@ -266,7 +272,7 @@ public class RmiClient {
                     break;
                 }
 
-                // ---------- Admin ----------
+
 
                 case "list_users": {
                     List<UserDTO> users = service.listUsers();
@@ -384,9 +390,7 @@ public class RmiClient {
                     break;
                 }
 
-                // ==============================
-                // Profils clients + plafonds dynamiques
-                // ==============================
+
 
                 case "get_client_type": {
                     requireArgs(args, 2, "Usage: get_client_type <clientId>");

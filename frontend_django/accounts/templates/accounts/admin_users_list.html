@@ -6,7 +6,7 @@
 <div class="grid cols-3">
     <div class="card">
         <h3 class="card-title">Utilisateurs</h3>
-        <p class="card-sub">Gestion des comptes et statuts</p>
+
         <div class="muted">
             Total : <strong>{{ total_users }}</strong><br>
             Admins : <strong>{{ total_admins }}</strong><br>
@@ -25,22 +25,25 @@
 
     <div class="card">
         <h3 class="card-title">Actions</h3>
-        <p class="card-sub">Raccourcis admin</p>
+
         <div class="row" style="margin-top:10px;">
             <a class="btn ghost" href="{% url 'admin_stats' %}">Stats</a>
             <a class="btn ghost" href="{% url 'admin_all_transactions' %}">Transactions</a>
-            <a class="btn primary" href="{% url 'admin_create_admin' %}">+ Créer admin</a>
 
+            {% if user.is_super_admin %}
+            <a class="btn primary" href="{% url 'admin_create_admin' %}">+ Créer admin</a>
+            {% endif %}
         </div>
     </div>
+
 
 </div>
 
 <div class="spacer"></div>
 
 <div class="card">
-    <h2 class="card-title">Recherche / Filtres</h2>
-    <p class="card-sub">Filtrer par username, rôle et statut</p>
+    <h2 class="card-title">Recherche par Filtres</h2>
+
 
     <form method="get" class="row" novalidate>
         <div class="field">
@@ -77,7 +80,7 @@
 
 <div class="card">
     <h2 class="card-title">Liste des utilisateurs</h2>
-    <p class="card-sub">Voir comptes (clients) + activer/désactiver</p>
+
 
     <table class="table">
         <thead>

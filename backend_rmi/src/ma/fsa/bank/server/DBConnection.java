@@ -17,9 +17,7 @@ public class DBConnection {
     private static String driverClassName;
     private static boolean initialized = false;
 
-    /**
-     * Charge la configuration depuis config/db.properties
-     */
+
     private static void loadConfiguration() {
         Properties props = new Properties();
 
@@ -35,7 +33,6 @@ public class DBConnection {
                 throw new RuntimeException("Configuration DB incomplète dans " + PROPERTIES_FILE);
             }
 
-            // Chargement de la classe driver JDBC
             Class.forName(driverClassName);
 
             initialized = true;
@@ -48,9 +45,7 @@ public class DBConnection {
         }
     }
 
-    /**
-     * Retourne une nouvelle connexion à la base MySQL.
-     */
+
     public static Connection getConnection() throws SQLException {
         if (!initialized) {
             loadConfiguration();

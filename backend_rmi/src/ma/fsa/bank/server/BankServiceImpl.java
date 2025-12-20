@@ -13,40 +13,37 @@ import java.util.List;
 
 public class BankServiceImpl extends UnicastRemoteObject implements BankService {
 
-    // ===== Limites de BASE (profil STANDARD) =====
-    private static final double BASE_DAILY_TRANSFER_LIMIT = 20000.0; // TRANSFER debit
-    private static final double BASE_DAILY_DEBIT_LIMIT    = 5000.0;  // total DEBIT (withdraw+transfer)
 
-    // Nombre max de comptes actifs par client
+    private static final double STANDARD_DAILY_TRANSFER_LIMIT = 20000.0;
+    private static final double STANDARD_DAILY_DEBIT_LIMIT    = 5000.0;
+    private static final double VIP_DAILY_TRANSFER_LIMIT = 50000.0;
+    private static final double VIP_DAILY_DEBIT_LIMIT    = 20000.0;
+
     private static final int MAX_ACTIVE_ACCOUNTS_PER_CLIENT = 3;
 
     public BankServiceImpl() throws RemoteException {
         super();
     }
 
-    // =========================================================
-    //  PROFILS CLIENTS + LIMITES DYNAMIQUES
-    // =========================================================
 
     private double coeffByClientType(String t) {
-        if (t == null) return 1.0;
-        switch (t.toUpperCase()) {
-            case "PREMIUM":    return 2.0;
-            case "VIP":        return 5.0;
-            case "ENTREPRISE": return 10.0;
-            case "ETUDIANT":   return 0.5;
-            default:           return 1.0; // STANDARD
-        }
+        return 1.0;
     }
+
 
     private String normalizeClientType(String t) {
         if (t == null) return "STANDARD";
         String up = t.toUpperCase();
-        if (up.equals("STANDARD") || up.equals("PREMIUM") || up.equals("VIP")
-                || up.equals("ENTREPRISE") || up.equals("ETUDIANT")) {
-            return up;
-        }
+        if (up.equals("VIP")) return "VIP";
         return "STANDARD";
+    }
+
+    private double dailyTransferLimitByType(String clientType) {
+        return "VIP".equalsIgnoreCase(clientType) ? VIP_DAILY_TRANSFER_LIMIT : STANDARD_DAILY_TRANSFER_LIMIT;
+    }
+
+    private double dailyDebitLimitByType(String clientType) {
+        return "VIP".equalsIgnoreCase(clientType) ? VIP_DAILY_DEBIT_LIMIT : STANDARD_DAILY_DEBIT_LIMIT;
     }
 
     private String getClientTypeByAccountId(Connection conn, int accountId) throws SQLException {
@@ -74,45 +71,11 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         throw new SQLException("client_id introuvable pour account_id=" + accountId);
     }
 
-    /**
-     * Migration auto : STANDARD/PREMIUM/VIP seulement.
-     * ENTREPRISE et ETUDIANT ne sont jamais changés automatiquement.
-     */
+
     private void autoMigrateClientType(Connection conn, int clientId) throws SQLException {
-        String current = "STANDARD";
-        try (PreparedStatement ps = conn.prepareStatement("SELECT client_type FROM client WHERE id=?")) {
-            ps.setInt(1, clientId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) current = normalizeClientType(rs.getString("client_type"));
-            }
-        }
 
-        if (current.equals("ENTREPRISE") || current.equals("ETUDIANT")) return;
-
-        double avgBal = 0.0;
-        String sqlAvg = "SELECT COALESCE(AVG(balance),0) AS avg_bal FROM account WHERE client_id=? AND status='ACTIVE'";
-        try (PreparedStatement ps = conn.prepareStatement(sqlAvg)) {
-            ps.setInt(1, clientId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) avgBal = rs.getDouble("avg_bal");
-            }
-        }
-
-        String target;
-        if (avgBal > 500_000) target = "VIP";
-        else if (avgBal > 100_000) target = "PREMIUM";
-        else target = "STANDARD";
-
-        if (!target.equals(current)) {
-            try (PreparedStatement ps = conn.prepareStatement("UPDATE client SET client_type=? WHERE id=?")) {
-                ps.setString(1, target);
-                ps.setInt(2, clientId);
-                ps.executeUpdate();
-            }
-        }
     }
 
-    // ---------- Utilitaires internes ----------
 
     private void requirePositiveFiniteAmount(double amount) throws RemoteException {
         if (!(amount > 0.0) || !Double.isFinite(amount)) {
@@ -167,9 +130,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         }
     }
 
-    /**
-     * Lecture “FOR UPDATE” pour éviter les incohérences en concurrence (2 retraits en même temps).
-     */
+
     private AccountDTO findAccountByNumberForUpdate(Connection conn, String accountNumber) throws SQLException {
         String sql =
                 "SELECT id, account_number, balance " +
@@ -265,9 +226,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                 String.format("%04d", clientId) + "-" + suffix;
     }
 
-    // =============================
-    // Admin : users
-    // =============================
+
 
     @Override
     public List<UserDTO> listUsers() throws RemoteException {
@@ -299,7 +258,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             throw new RemoteException("Erreur SQL dans listUsers", e);
         }
     }
-
 
     @Override
     public UserDTO createAdminUser(String username, String plainPassword) throws RemoteException {
@@ -377,96 +335,114 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         }
     }
 
-    // =============================
-    // Inscription
-    // =============================
+
 
     @Override
     public RegisterResponse registerUser(RegisterRequest req) throws RemoteException {
         if (req == null) return new RegisterResponse(false, "Requête invalide");
-        if (req.getUsername() == null || req.getUsername().trim().isEmpty()) return new RegisterResponse(false, "Username invalide");
-        if (req.getPlainPassword() == null || req.getPlainPassword().isEmpty()) return new RegisterResponse(false, "Password invalide");
+
+        String username = (req.getUsername() == null) ? null : req.getUsername().trim();
+        String password = (req.getPlainPassword() == null) ? null : req.getPlainPassword();
+        String firstName = (req.getFirstName() == null) ? null : req.getFirstName().trim();
+        String lastName  = (req.getLastName() == null) ? null : req.getLastName().trim();
+        String cin       = (req.getCin() == null) ? null : req.getCin().trim();
+
+
+        String email   = (req.getEmail() == null || "-".equals(req.getEmail().trim())) ? null : req.getEmail().trim();
+        String phone   = (req.getPhone() == null || "-".equals(req.getPhone().trim())) ? null : req.getPhone().trim();
+        String address = (req.getAddress() == null || "-".equals(req.getAddress().trim())) ? null : req.getAddress().trim();
+
+        int branchId = req.getBranchId();
+
+        if (username == null || username.isEmpty()) return new RegisterResponse(false, "Username invalide");
+        if (password == null || password.isEmpty()) return new RegisterResponse(false, "Password invalide");
+        if (password.length() < 4) return new RegisterResponse(false, "Password trop court (min 4)");
+        if (firstName == null || firstName.isEmpty()) return new RegisterResponse(false, "Prénom obligatoire");
+        if (lastName == null || lastName.isEmpty())  return new RegisterResponse(false, "Nom obligatoire");
+        if (cin == null || cin.isEmpty())            return new RegisterResponse(false, "CIN obligatoire");
+        if (branchId <= 0) return new RegisterResponse(false, "Agence invalide");
 
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
 
             try {
-                String sqlUser = "SELECT COUNT(*) FROM `user` WHERE username = ?";
-                try (PreparedStatement checkUser = conn.prepareStatement(sqlUser)) {
-                    checkUser.setString(1, req.getUsername());
-                    try (ResultSet rs = checkUser.executeQuery()) {
+
+                try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM `user` WHERE username=?")) {
+                    ps.setString(1, username);
+                    try (ResultSet rs = ps.executeQuery()) {
                         rs.next();
                         if (rs.getInt(1) > 0) {
                             conn.rollback();
-                            return new RegisterResponse(false, "Nom d'utilisateur deja utilise");
+                            return new RegisterResponse(false, "Nom d'utilisateur déjà utilisé");
                         }
                     }
                 }
 
-                Integer branchId = null;
-                String sqlBranch = "SELECT id FROM branch ORDER BY id LIMIT 1";
-                try (PreparedStatement stmt = conn.prepareStatement(sqlBranch);
-                     ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) branchId = rs.getInt("id");
-                }
-                if (branchId == null) {
-                    conn.rollback();
-                    return new RegisterResponse(false, "Aucune agence configuree dans la base.");
+
+                try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM client WHERE cin=?")) {
+                    ps.setString(1, cin);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        rs.next();
+                        if (rs.getInt(1) > 0) {
+                            conn.rollback();
+                            return new RegisterResponse(false, "CIN déjà utilisé");
+                        }
+                    }
                 }
 
-                String generatedCin = "TMP-" + System.currentTimeMillis();
 
-                String insertClientSql =
-                        "INSERT INTO client (branch_id, first_name, last_name, cin, email, phone, address, client_type) " +
-                                "VALUES (?, ?, ?, ?, NULL, NULL, NULL, 'STANDARD')";
+                try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM branch WHERE id=?")) {
+                    ps.setInt(1, branchId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        rs.next();
+                        if (rs.getInt(1) == 0) {
+                            conn.rollback();
+                            return new RegisterResponse(false, "Agence introuvable");
+                        }
+                    }
+                }
+
 
                 int clientId;
-                try (PreparedStatement insertClient =
-                             conn.prepareStatement(insertClientSql, Statement.RETURN_GENERATED_KEYS)) {
+                String sqlClient =
+                        "INSERT INTO client (branch_id, first_name, last_name, cin, email, phone, address, client_type) " +
+                                "VALUES (?, ?, ?, ?, ?, ?, ?, 'STANDARD')";
 
-                    insertClient.setInt(1, branchId);
-                    insertClient.setString(2, req.getUsername());
-                    insertClient.setString(3, "Client");
-                    insertClient.setString(4, generatedCin);
-                    insertClient.executeUpdate();
+                try (PreparedStatement ps = conn.prepareStatement(sqlClient, Statement.RETURN_GENERATED_KEYS)) {
+                    ps.setInt(1, branchId);
+                    ps.setString(2, firstName);
+                    ps.setString(3, lastName);
+                    ps.setString(4, cin);
+                    if (email != null) ps.setString(5, email); else ps.setNull(5, Types.VARCHAR);
+                    if (phone != null) ps.setString(6, phone); else ps.setNull(6, Types.VARCHAR);
+                    if (address != null) ps.setString(7, address); else ps.setNull(7, Types.VARCHAR);
 
-                    try (ResultSet genKeys = insertClient.getGeneratedKeys()) {
-                        if (!genKeys.next()) {
+                    ps.executeUpdate();
+                    try (ResultSet keys = ps.getGeneratedKeys()) {
+                        if (!keys.next()) {
                             conn.rollback();
-                            return new RegisterResponse(false, "Echec lors de la creation du client");
+                            return new RegisterResponse(false, "Échec création client");
                         }
-                        clientId = genKeys.getInt(1);
+                        clientId = keys.getInt(1);
                     }
                 }
 
-                String passwordHash = hashPassword(req.getPlainPassword());
 
-                String insertUserSql =
+                String hash = hashPassword(password);
+                String sqlUser =
                         "INSERT INTO `user` (client_id, username, password_hash, role, is_active) " +
                                 "VALUES (?, ?, ?, 'CLIENT', 1)";
 
-                try (PreparedStatement insertUser = conn.prepareStatement(insertUserSql)) {
-                    insertUser.setInt(1, clientId);
-                    insertUser.setString(2, req.getUsername());
-                    insertUser.setString(3, passwordHash);
-                    insertUser.executeUpdate();
+                try (PreparedStatement ps = conn.prepareStatement(sqlUser)) {
+                    ps.setInt(1, clientId);
+                    ps.setString(2, username);
+                    ps.setString(3, hash);
+                    ps.executeUpdate();
                 }
 
-                String accountNumber = generateNextAccountNumber(conn, clientId, branchId);
-
-                String insertAccountSql =
-                        "INSERT INTO account (client_id, branch_id, account_number, type, currency, balance, status) " +
-                                "VALUES (?, ?, ?, 'CHECKING', 'MAD', 0.00, 'ACTIVE')";
-
-                try (PreparedStatement insertAccount = conn.prepareStatement(insertAccountSql)) {
-                    insertAccount.setInt(1, clientId);
-                    insertAccount.setInt(2, branchId);
-                    insertAccount.setString(3, accountNumber);
-                    insertAccount.executeUpdate();
-                }
 
                 conn.commit();
-                return new RegisterResponse(true, "Inscription reussie");
+                return new RegisterResponse(true, "Inscription réussie. Connectez-vous pour créer votre compte bancaire.");
 
             } catch (Exception e) {
                 try { conn.rollback(); } catch (SQLException ignored) {}
@@ -480,9 +456,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         }
     }
 
-    // =============================
-    // Authentification
-    // =============================
 
     @Override
     public UserDTO authenticate(String username, String password) throws RemoteException {
@@ -520,9 +493,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
     }
 
 
-    // =============================
-    // Opérations classiques
-    // =============================
 
     @Override
     public double getBalance(String accountNumber) throws RemoteException {
@@ -556,8 +526,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
                 insertTransaction(conn, account.getId(), null, "DEPOSIT", "CREDIT", amount, newBalance, "Depot via RMI");
 
-                int clientId = getClientIdByAccountId(conn, account.getId());
-                autoMigrateClientType(conn, clientId);
+
 
                 conn.commit();
                 return true;
@@ -585,13 +554,12 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                 AccountDTO account = findAccountByNumberForUpdate(conn, accountNumber);
                 if (account == null) { conn.rollback(); return false; }
 
-                String type = getClientTypeByAccountId(conn, account.getId());
-                double coeff = coeffByClientType(type);
+                String clientType = getClientTypeByAccountId(conn, account.getId());
+                double dailyDebitLimit = dailyDebitLimitByType(clientType); // ici: plafond retrait
 
-                double dynamicDailyDebitLimit = BASE_DAILY_DEBIT_LIMIT * coeff;
 
-                double alreadyToday = getTodayTotalDebits(conn, account.getId());
-                if (alreadyToday + amount > dynamicDailyDebitLimit) {
+                double alreadyWithdrawalToday = getTodayDebitSum(conn, account.getId(), "WITHDRAWAL");
+                if (alreadyWithdrawalToday + amount > dailyDebitLimit) {
                     conn.rollback();
                     return false;
                 }
@@ -611,9 +579,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
                 insertTransaction(conn, account.getId(), null, "WITHDRAWAL", "DEBIT", amount, newBalance, "Retrait via RMI");
 
-                int clientId = getClientIdByAccountId(conn, account.getId());
-                autoMigrateClientType(conn, clientId);
-
                 conn.commit();
                 return true;
 
@@ -629,6 +594,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         }
     }
 
+
     @Override
     public boolean transfer(String fromAccount, String toAccount, double amount) throws RemoteException {
         requirePositiveFiniteAmount(amount);
@@ -639,7 +605,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             conn.setAutoCommit(false);
 
             try {
-                // Astuce anti-deadlock: verrouiller dans un ordre déterministe
+
                 String a = fromAccount.compareTo(toAccount) <= 0 ? fromAccount : toAccount;
                 String b = fromAccount.compareTo(toAccount) <= 0 ? toAccount : fromAccount;
 
@@ -654,16 +620,11 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                 if (source.getBalance() < amount) { conn.rollback(); return false; }
 
                 String clientType = getClientTypeByAccountId(conn, source.getId());
-                double coeff = coeffByClientType(clientType);
+                double transferLimit = dailyTransferLimitByType(clientType);
 
-                double dynamicTransferLimit = BASE_DAILY_TRANSFER_LIMIT * coeff;
-                double dynamicDebitLimit    = BASE_DAILY_DEBIT_LIMIT * coeff;
 
                 double alreadyTransferToday = getTodayDebitSum(conn, source.getId(), "TRANSFER");
-                if (alreadyTransferToday + amount > dynamicTransferLimit) { conn.rollback(); return false; }
-
-                double alreadyDebitsToday = getTodayTotalDebits(conn, source.getId());
-                if (alreadyDebitsToday + amount > dynamicDebitLimit) { conn.rollback(); return false; }
+                if (alreadyTransferToday + amount > transferLimit) { conn.rollback(); return false; }
 
                 double newSourceBalance = source.getBalance() - amount;
                 double newTargetBalance = target.getBalance() + amount;
@@ -682,9 +643,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
                 insertTransaction(conn, source.getId(), target.getId(), "TRANSFER", "DEBIT", amount, newSourceBalance, "Virement vers " + toAccount);
                 insertTransaction(conn, target.getId(), source.getId(), "TRANSFER", "CREDIT", amount, newTargetBalance, "Virement depuis " + fromAccount);
-
-                int clientId = getClientIdByAccountId(conn, source.getId());
-                autoMigrateClientType(conn, clientId);
 
                 conn.commit();
                 return true;
@@ -791,9 +749,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         }
     }
 
-    // =============================
-    // Stats Admin
-    // =============================
+
 
     @Override
     public AdminGlobalStatsDTO getAdminGlobalStats() throws RemoteException {
@@ -1037,7 +993,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
     }
 
     // ==============================
-    // Profils + plafonds dynamiques
+    // Profils + plafonds
     // ==============================
 
     @Override
@@ -1082,10 +1038,9 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             if (acc == null) throw new RemoteException("Compte introuvable : " + accountNumber);
 
             String clientType = getClientTypeByAccountId(conn, acc.getId());
-            double coeff = coeffByClientType(clientType);
 
-            double dailyTransfer = BASE_DAILY_TRANSFER_LIMIT * coeff;
-            double dailyDebit = BASE_DAILY_DEBIT_LIMIT * coeff;
+            double dailyTransfer = dailyTransferLimitByType(clientType);
+            double dailyDebit = dailyDebitLimitByType(clientType);
 
             return new AccountLimitsDTO(accountNumber, clientType, dailyTransfer, dailyDebit);
 
@@ -1093,6 +1048,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             throw new RemoteException("Erreur SQL dans getAccountLimits", e);
         }
     }
+
     // ==============================
     // Mon compte (profil user)
     // ==============================
@@ -1167,7 +1123,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             conn.setAutoCommit(false);
 
             try {
-                // charger user + client_id
+
                 Integer clientId = null;
                 String currentUsername = null;
 
@@ -1204,7 +1160,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                     }
                 }
 
-                // si client => update client fields
                 if (clientId != null) {
                     String fn = trimOrNull(update.getFirstName());
                     String ln = trimOrNull(update.getLastName());
@@ -1212,7 +1167,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                     String phone = trimOrNull(update.getPhone());
                     String address = trimOrNull(update.getAddress());
 
-                    // first_name & last_name NOT NULL dans ta BD => on garde l’existant si vide
                     String sqlGetClient = "SELECT first_name, last_name FROM client WHERE id=?";
                     String curFn = null, curLn = null;
                     try (PreparedStatement ps = conn.prepareStatement(sqlGetClient)) {
@@ -1258,6 +1212,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             throw new RemoteException("Erreur SQL dans updateUserProfile", e);
         }
     }
+
     @Override
     public boolean adminResetPassword(int actorUserId, int targetUserId, String newPlainPassword) throws RemoteException {
         if (actorUserId <= 0) throw new RemoteException("actorUserId invalide");
@@ -1269,7 +1224,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             conn.setAutoCommit(false);
 
             try {
-                // 1) vérifier acteur super-admin
+
                 boolean actorIsSuper = false;
                 try (PreparedStatement ps = conn.prepareStatement("SELECT is_super_admin FROM `user` WHERE id=?")) {
                     ps.setInt(1, actorUserId);
@@ -1287,7 +1242,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                     throw new RemoteException("Accès refusé (super-admin requis)");
                 }
 
-                // 2) vérifier cible existe
                 try (PreparedStatement ps = conn.prepareStatement("SELECT id FROM `user` WHERE id=?")) {
                     ps.setInt(1, targetUserId);
                     try (ResultSet rs = ps.executeQuery()) {
@@ -1298,7 +1252,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                     }
                 }
 
-                // 3) update password + reset locks
                 String newHash = hashPassword(newPlainPassword);
 
                 try (PreparedStatement ps = conn.prepareStatement(
@@ -1330,6 +1283,4 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             throw new RemoteException("Erreur SQL dans adminResetPassword", e);
         }
     }
-
-
 }

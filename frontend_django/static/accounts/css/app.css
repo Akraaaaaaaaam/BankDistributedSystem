@@ -506,3 +506,64 @@ textarea:focus{
 /* TEST FORCE NAV COLOR */
 .nav { background: #0b1f3a !important; }
 .nav .btn { color: #fff !important; border-color: rgba(255,255,255,.25) !important; }
+.toast {
+  color: #111;               /* texte lisible */
+  background: #fff;          /* fond blanc */
+  border: 1px solid #e5e7eb; /* bord léger */
+  box-shadow: 0 10px 20px rgba(0,0,0,.08);
+}
+
+.toast.success { border-left: 6px solid #16a34a; }
+.toast.error   { border-left: 6px solid #dc2626; }
+.toast.warning { border-left: 6px solid #f59e0b; }
+.toast.info    { border-left: 6px solid #2563eb; }
+
+.toast .toast-body { color: inherit; }
+input, select, textarea {
+  color: #111;
+  background: #fff;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280; /* gris lisible */
+  opacity: 1;
+}
+table { color: #111; }
+th, td { color: inherit; }
+thead th { background: #f8fafc; }
+tbody tr:hover { background: #f1f5f9; }
+:root{
+  --text: #0f172a;
+  --muted: #475569;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+}
+
+body { color: var(--text); background: var(--bg); }
+.card, .toast, .table-wrap { background: var(--surface); border: 1px solid var(--border); }
+.muted { color: var(--muted); }
+/* Pills/Badges dans le tableau users (Rôle / Statut) */
+.users-table .pill,
+.users-table .badge,
+.users-table .chip,
+td .pill,
+td .badge,
+td .chip {
+  color: #0f172a !important;          /* texte visible */
+  background: #f1f5f9 !important;     /* fond léger */
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* (optionnel) variantes statut */
+.status-active {
+  color: #166534 !important;
+  background: #dcfce7 !important;
+  border-color: #86efac !important;
+}
+.status-inactive {
+  color: #991b1b !important;
+  background: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+}

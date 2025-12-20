@@ -8,11 +8,11 @@ import ma.fsa.bank.common.dto.*;
 
 public interface BankService extends Remote {
 
-    // Auth & inscription
+
     RegisterResponse registerUser(RegisterRequest req) throws RemoteException;
     UserDTO authenticate(String username, String password) throws RemoteException;
 
-    // Opérations classiques
+
     double getBalance(String accountNumber) throws RemoteException;
     boolean deposit(String accountNumber, double amount) throws RemoteException;
     boolean withdraw(String accountNumber, double amount) throws RemoteException;
@@ -23,28 +23,28 @@ public interface BankService extends Remote {
     List<AccountDTO> getClientAccounts(int clientId) throws RemoteException;
     boolean closeAccount(String accountNumber) throws RemoteException;
 
-    // Admin : users
+
     List<UserDTO> listUsers() throws RemoteException;
     UserDTO createAdminUser(String username, String plainPassword) throws RemoteException;
     boolean setUserActive(int userId, boolean active) throws RemoteException;
 
-    // ✅ NEW: Reset password (SUPER ADMIN only)
+
     boolean adminResetPassword(int actorUserId, int targetUserId, String newPlainPassword) throws RemoteException;
 
-    // Admin : stats + transactions globales
+
     AdminGlobalStatsDTO getAdminGlobalStats() throws RemoteException;
     List<TransactionDTO> getAllTransactions() throws RemoteException;
 
-    // Agences & création compte
+
     List<BranchDTO> listBranches() throws RemoteException;
     AccountDTO createAccount(int clientId, int branchId, String type, String currency) throws RemoteException;
 
-    // Profils clients + plafonds dynamiques
+
     String getClientType(int clientId) throws RemoteException;
     boolean setClientType(int clientId, String clientType) throws RemoteException;
     AccountLimitsDTO getAccountLimits(String accountNumber) throws RemoteException;
 
-    // ✅ Mon compte (profil user)
+
     UserProfileDTO getUserProfile(int userId) throws RemoteException;
     boolean updateUserProfile(UserProfileUpdateDTO update) throws RemoteException;
 }

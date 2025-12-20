@@ -37,7 +37,7 @@
         <div class="field">
             <label for="id_username">Nom d'utilisateur</label>
             <input class="input" id="id_username" name="username" value="{{ profile.username|default:user.username }}" required>
-            <div class="muted" style="font-size:12px; margin-top:6px;">3-50 caractères: lettres/chiffres/._-</div>
+            <div class="muted" style="font-size:12px; margin-top:6px;">de 3 à 50 caractères: juste lettres et chiffres et ._-</div>
         </div>
 
         {% if user.role == "CLIENT" %}

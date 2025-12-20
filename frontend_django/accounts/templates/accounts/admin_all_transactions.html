@@ -6,7 +6,7 @@
 <div class="grid cols-2">
     <div class="card">
         <h2 class="card-title">Journal global des transactions</h2>
-        <p class="card-sub">Filtres • pagination • export CSV</p>
+        <p class="card-sub">Filtres, stats et export CSV</p>
 
         <div class="row" style="margin-top:10px;">
             <a class="btn ghost" href="{% url 'admin_stats' %}">Stats</a>
@@ -21,7 +21,7 @@
 
     <div class="card">
         <h3 class="card-title">Filtres</h3>
-        <p class="card-sub">Compte / type / période</p>
+
 
         <form method="get" class="row" novalidate>
             <div class="field">
@@ -61,7 +61,7 @@
 
 <div class="card">
     <h3 class="card-title">Transactions</h3>
-    <p class="card-sub">Résultats paginés</p>
+    <p class="card-sub">Résultats</p>
 
     <table class="table">
         <thead>

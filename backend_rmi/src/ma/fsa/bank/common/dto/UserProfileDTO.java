@@ -11,7 +11,7 @@ public class UserProfileDTO implements Serializable {
     private String role;
     private boolean active;
 
-    // Client info (si role=CLIENT et clientId != null)
+
     private String firstName;
     private String lastName;
     private String cin;

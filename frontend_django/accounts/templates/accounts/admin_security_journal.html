@@ -4,11 +4,11 @@
 {% block content %}
 <div class="card">
     <h2 class="card-title">Journal sécurité</h2>
-    <p class="card-sub">Connexions, OTP, actions admin (audit)</p>
+
 
     <form method="get" class="row" novalidate>
         <div class="field">
-            <label class="muted" for="q">Recherche (action / IP)</label>
+            <label class="muted" for="q">Action</label>
             <input class="input" id="q" name="q" value="{{ filters.q }}" placeholder="LOGIN, OTP, ADMIN_SET_ACTIVE...">
         </div>
         <div class="field">
@@ -33,13 +33,13 @@
     <table class="table">
         <thead>
         <tr>
-            <th>ID</th><th>User</th><th>Action</th><th>IP</th><th>Date</th>
+            <th>User</th><th>Action</th><th>IP</th><th>Date</th>
         </tr>
         </thead>
         <tbody>
         {% for l in logs %}
         <tr>
-            <td class="muted">{{ l.id }}</td>
+
             <td class="muted">{{ l.user_id|default:"-" }}</td>
             <td><span class="badge">{{ l.action }}</span></td>
             <td class="muted">{{ l.ip_address|default:"-" }}</td>

@@ -5,7 +5,7 @@
 <div class="grid cols-2">
     <div class="card">
         <h2 class="card-title">Vos comptes existants</h2>
-        <p class="card-sub">Vue rapide avant création</p>
+
 
         {% if accounts %}
         <table class="table">
@@ -51,7 +51,7 @@
             <div class="field">
                 <label for="id_branch">Agence</label>
                 <select id="id_branch" name="branch_id" required>
-                    <option value="">-- Sélectionnez une agence --</option>
+                    <option value=""> Sélectionnez une agence </option>
                     {% for b in branches %}
                     <option value="{{ b.id }}">{{ b.code }} - {{ b.name }} ({{ b.city }})</option>
                     {% endfor %}

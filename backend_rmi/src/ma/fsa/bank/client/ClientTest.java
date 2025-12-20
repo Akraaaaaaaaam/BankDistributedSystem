@@ -9,13 +9,13 @@ public class ClientTest {
 
     public static void main(String[] args) {
         try {
-            // Connexion au registre RMI sur localhost:1099
+
             Registry registry = LocateRegistry.getRegistry("localhost", 1099);
 
-            // Récupération du stub du service
+
             BankService bankService = (BankService) registry.lookup("BankService");
 
-            String accountNumber = "ACC-001-0001"; // adapte à un numéro existant dans ta table account
+            String accountNumber = "ACC-001-0001";
 
             System.out.println("=== Test consultation de solde ===");
             double balanceBefore = bankService.getBalance(accountNumber);

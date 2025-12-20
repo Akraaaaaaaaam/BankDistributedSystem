@@ -1,4 +1,5 @@
 from __future__ import annotations
+from __future__ import annotations
 
 from datetime import datetime
 from functools import wraps
@@ -36,9 +37,7 @@ from .rmi_client import (
 )
 
 
-# ==========================
-# Utils: IP + Audit
-# ==========================
+
 
 def get_client_ip(request) -> str:
     xff = request.META.get("HTTP_X_FORWARDED_FOR")
@@ -58,18 +57,14 @@ def log_event(request, action: str) -> None:
 
 
 def _safe_next_redirect(request, default_name: str):
-    """
-    Accepte next URL (chemin) et protège contre open-redirect.
-    """
+
     next_url = (request.POST.get("next") or request.GET.get("next") or "").strip()
     if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
         return redirect(next_url)
     return redirect(default_name)
 
 
-# ==========================
-# Guards : auth / staff / admin
-# ==========================
+
 
 def _otp_ok(request) -> bool:
     return (not request.session.get("otp_required")) or bool(request.session.get("otp_verified"))
@@ -91,9 +86,7 @@ def login_required(view_func):
 
 
 def staff_required(view_func):
-    """
-    STAFF = ADMIN ou EMPLOYEE (lecture backoffice).
-    """
+
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         user = request.session.get("user")
@@ -154,19 +147,13 @@ def super_admin_required(view_func):
     return wrapper
 
 
-# ==========================
-# OTP
-# ==========================
 
 def _generate_otp_code() -> str:
     return f"{secrets.randbelow(1_000_000):06d}"
 
 
 def _start_otp_flow(request, user_dict: dict) -> None:
-    """
-    Ici: OTP activé (ADMIN/EMPLOYEE/CLIENT).
-    Si tu veux OTP seulement ADMIN+EMPLOYEE => otp_required = role in {"ADMIN","EMPLOYEE"}
-    """
+
     role = user_dict.get("role")
     otp_required = True
 
@@ -180,18 +167,32 @@ def _start_otp_flow(request, user_dict: dict) -> None:
         print(f"[OTP] Code OTP pour {user_dict.get('username')} ({role}) = {code}", flush=True)
 
 
-# ==========================
-# Register / Login / Logout
-# ==========================
+
 
 def register_view(request):
-    if request.method == "POST":
-        form = RegisterForm(request.POST)
-        if form.is_valid():
-            username = form.cleaned_data["username"]
-            password = form.cleaned_data["password1"]
 
-            resp = rmi_client.register(username, password)
+    br = rmi_get_branches()
+    branches = br.get("branches", []) if br.get("success") else []
+    if not br.get("success"):
+        messages.error(request, br.get("error", "Impossible de charger la liste des agences."))
+
+    if request.method == "POST":
+        form = RegisterForm(request.POST, branches=branches)
+        if form.is_valid():
+            cd = form.cleaned_data
+
+            resp = rmi_client.register(
+                username=cd["username"],
+                password=cd["password1"],
+                branch_id=int(cd["branch_id"]),
+                first_name=cd["first_name"],
+                last_name=cd["last_name"],
+                cin=cd["cin"],
+                email=cd.get("email") or "",
+                phone=cd.get("phone") or "",
+                address=cd.get("address") or "",
+            )
+
             if resp.get("success"):
                 messages.success(request, "Inscription réussie ! Vous pouvez maintenant vous connecter.")
                 return redirect("login")
@@ -199,9 +200,9 @@ def register_view(request):
             error_msg = resp.get("message") or resp.get("error") or "Erreur lors de l'inscription."
             messages.error(request, error_msg)
     else:
-        form = RegisterForm()
+        form = RegisterForm(branches=branches)
 
-    return render(request, "accounts/register.html", {"form": form})
+    return render(request, "accounts/register.html", {"form": form, "branches": branches})
 
 
 def login_view(request):
@@ -290,9 +291,7 @@ def logout_view(request):
     return redirect("login")
 
 
-# ==========================
-# Helpers : ownership
-# ==========================
+
 
 def _get_owned_account_numbers(client_id: int) -> Set[str]:
     acc_data = get_client_accounts(client_id)
@@ -315,16 +314,12 @@ def _ensure_account_owned(request, account_number: str) -> bool:
     return str(account_number) in owned
 
 
-# ==========================
-# Client : dashboard / ops
-# ==========================
-
 @login_required
 def dashboard(request):
     user = request.session.get("user") or {}
     role = user.get("role")
 
-    # ADMIN/EMPLOYEE => backoffice
+
     if role in {"ADMIN", "EMPLOYEE"}:
         return redirect("admin_stats")
 
@@ -666,10 +661,6 @@ def create_account_view(request):
     return render(request, "accounts/create_account.html", {"user": user, "accounts": accounts, "branches": branches})
 
 
-# ==========================
-# CSV Export (CLIENT)
-# ==========================
-
 @login_required
 def export_transactions_csv(request, account_number: str):
     if not _ensure_account_owned(request, account_number):
@@ -695,9 +686,7 @@ def export_transactions_csv(request, account_number: str):
     return response
 
 
-# ==========================
-# ADMIN : users / accounts (ADMIN only)
-# ==========================
+
 
 @admin_required
 def admin_users_list(request):
@@ -754,7 +743,7 @@ def admin_users_list(request):
     )
 
 
-@admin_required
+@super_admin_required
 def admin_create_admin(request):
     if request.method == "POST":
         username = (request.POST.get("username") or "").strip()
@@ -856,7 +845,19 @@ def admin_client_accounts(request, client_id: int):
     if not data.get("success"):
         messages.error(request, data.get("error", "Erreur lors du chargement des comptes du client."))
 
-    return render(request, "accounts/admin_client_accounts.html", {"client_id": client_id, "accounts": accounts})
+
+    normalized = []
+    for a in accounts:
+        if isinstance(a, dict):
+            if "number" not in a or not a.get("number"):
+                a["number"] = a.get("account_number")
+        normalized.append(a)
+
+    return render(
+        request,
+        "accounts/admin_client_accounts.html",
+        {"client_id": client_id, "accounts": normalized},
+    )
 
 
 @admin_required
@@ -873,10 +874,6 @@ def admin_close_account(request, account_number: str):
 
     return _safe_next_redirect(request, "admin_users_list")
 
-
-# ==========================
-# STAFF : transactions + export (ADMIN + EMPLOYEE)
-# ==========================
 
 @staff_required
 def admin_all_transactions(request):
@@ -1010,9 +1007,7 @@ def admin_export_transactions_csv(request):
     return resp
 
 
-# ==========================
-# ADMIN : exports / profils clients (ADMIN only)
-# ==========================
+
 
 @admin_required
 def admin_export_clients_accounts_csv(request):
@@ -1057,30 +1052,7 @@ def admin_clients_list(request):
     return render(request, "accounts/admin_clients_list.html", {"user": request.session.get("user"), "clients": clients})
 
 
-@admin_required
-def admin_set_client_type(request, client_id: int):
-    if request.method != "POST":
-        return redirect("admin_clients_list")
 
-    client_type = (request.POST.get("client_type") or "").strip().upper()
-    if client_type not in {"STANDARD", "VIP", "BUSINESS"}:
-        messages.error(request, "Type invalide (STANDARD/VIP/BUSINESS).")
-        return redirect("admin_clients_list")
-
-    resp = rmi_client.set_client_type(int(client_id), client_type)
-
-    if resp.get("success"):
-        messages.success(request, f"Type client mis à jour: {client_type}")
-        log_event(request, "ADMIN_SET_CLIENT_TYPE")
-    else:
-        messages.error(request, resp.get("error", "Échec mise à jour type client."))
-
-    return redirect("admin_clients_list")
-
-
-# ==========================
-# STAFF : journal sécurité (ADMIN + EMPLOYEE)
-# ==========================
 
 @staff_required
 def admin_security_journal(request):
@@ -1115,9 +1087,6 @@ def admin_security_journal(request):
     )
 
 
-# ==========================
-# Mon compte
-# ==========================
 
 @login_required
 def my_account_view(request):
@@ -1167,9 +1136,7 @@ def my_account_view(request):
     return render(request, "accounts/my_account.html", {"user": user, "profile": profile})
 
 
-# ==========================
-# STAFF : stats (ADMIN + EMPLOYEE)
-# ==========================
+
 
 @staff_required
 def admin_stats_view(request):
@@ -1276,3 +1243,22 @@ def admin_stats_view(request):
             "branch_values_json": branch_values,
         },
     )
+@admin_required
+def admin_set_client_type(request, client_id: int):
+    if request.method != "POST":
+        return redirect("admin_clients_list")
+
+    client_type = (request.POST.get("client_type") or "").strip().upper()
+    if client_type not in {"STANDARD", "VIP"}:
+        messages.error(request, "Type invalide (STANDARD/VIP).")
+        return redirect("admin_clients_list")
+
+    resp = rmi_client.set_client_type(int(client_id), client_type)
+
+    if resp.get("success"):
+        messages.success(request, f"Type client mis à jour: {client_type}")
+        log_event(request, "ADMIN_SET_CLIENT_TYPE")
+    else:
+        messages.error(request, resp.get("error", "Échec mise à jour type client."))
+
+    return redirect("admin_clients_list")

@@ -4,7 +4,7 @@
 {% block content %}
 <div class="card">
     <h1 class="card-title">Bienvenue, {{ user.username }}</h1>
-    <p class="card-sub">Rôle : <strong>{{ user.role }}</strong></p>
+
 
     {% if user.role == "CLIENT" %}
     <div class="row" style="margin-top:10px;">
@@ -17,17 +17,17 @@
     <div class="spacer"></div>
 
     <h2 class="card-title">Mes comptes</h2>
-    <p class="card-sub">Cliquez pour voir l’historique</p>
+
 
     {% if accounts %}
     <table class="table">
         <thead>
-        <tr><th>ID</th><th>Compte</th><th>Solde</th><th></th></tr>
+        <tr><th>Compte</th><th>Solde</th><th></th></tr>
         </thead>
         <tbody>
         {% for acc in accounts %}
         <tr>
-            <td class="muted">{{ acc.id }}</td>
+
             <td><strong>{{ acc.number }}</strong></td>
             <td>{{ acc.balance }}</td>
             <td style="white-space:nowrap;">
