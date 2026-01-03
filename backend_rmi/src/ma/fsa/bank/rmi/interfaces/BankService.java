@@ -44,6 +44,7 @@ public interface BankService extends Remote {
     boolean setClientType(int clientId, String clientType) throws RemoteException;
     AccountLimitsDTO getAccountLimits(String accountNumber) throws RemoteException;
 
+    boolean adminDeleteUser(int actorUserId, int targetUserId) throws RemoteException;
 
     UserProfileDTO getUserProfile(int userId) throws RemoteException;
     boolean updateUserProfile(UserProfileUpdateDTO update) throws RemoteException;

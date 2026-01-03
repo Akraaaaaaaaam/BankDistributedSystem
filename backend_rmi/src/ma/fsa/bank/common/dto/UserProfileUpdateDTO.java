@@ -8,7 +8,6 @@ public class UserProfileUpdateDTO implements Serializable {
     private int userId;
     private String username;
 
-    // Client fields (optionnels)
     private String firstName;
     private String lastName;
     private String email;

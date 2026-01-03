@@ -1,50 +1,42 @@
 <!--?xml version="1.0" encoding="UTF-8"?-->
 <svg width="980" height="620" viewBox="0 0 980 620" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- Gold -->
+
     <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#f7d98a"></stop>
       <stop offset="0.5" stop-color="#d2aa43"></stop>
       <stop offset="1" stop-color="#b98922"></stop>
     </linearGradient>
 
-    <!-- Shield Red -->
     <linearGradient id="shieldRed" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#c51616"></stop>
       <stop offset="0.55" stop-color="#9f0f10"></stop>
       <stop offset="1" stop-color="#7f0b0b"></stop>
     </linearGradient>
 
-    <!-- Ribbon Red -->
     <linearGradient id="ribRed" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#d61818"></stop>
       <stop offset="1" stop-color="#8f0c0c"></stop>
     </linearGradient>
 
-    <!-- Ribbon Green -->
     <linearGradient id="ribGreen" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0e6a35"></stop>
       <stop offset="1" stop-color="#074522"></stop>
     </linearGradient>
 
-    <!-- Soft shadow -->
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.22"></feDropShadow>
     </filter>
 
-    <!-- Small shadow -->
     <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.18"></feDropShadow>
     </filter>
   </defs>
 
-  <!-- Background (transparent) -->
   <rect width="980" height="620" fill="transparent"></rect>
 
-  <!-- ===== Emblem ===== -->
   <g transform="translate(0,0)" filter="url(#shadow)">
 
-    <!-- Shield outline -->
     <path d="M490 60
              C560 85 630 95 690 110
              L690 260
@@ -53,7 +45,6 @@
              L290 110
              C350 95 420 85 490 60 Z" fill="url(#gold)"></path>
 
-    <!-- Inner shield -->
     <path d="M490 78
              C553 100 616 108 670 121
              L670 258
@@ -62,14 +53,12 @@
              L310 121
              C364 108 427 100 490 78 Z" fill="url(#shieldRed)"></path>
 
-    <!-- Moroccan star -->
     <g transform="translate(490,150)">
       <path d="M0,-38 L9,-12 L36,-12 L14,2 L22,28 L0,12 L-22,28 L-14,2 L-36,-12 L-9,-12 Z" fill="none" stroke="#0b7a3a" stroke-width="6" stroke-linejoin="round"></path>
     </g>
 
-    <!-- Bank icon + coins + DH -->
     <g transform="translate(0,0)" filter="url(#soft)">
-      <!-- Bank building -->
+
       <g transform="translate(380,210)">
         <path d="M110 0 L220 45 L0 45 Z" fill="url(#gold)"></path>
         <rect x="20" y="45" width="200" height="18" rx="6" fill="url(#gold)"></rect>
@@ -81,7 +70,6 @@
         <circle cx="110" cy="38" r="9" fill="#7a1a12" opacity="0.25"></circle>
       </g>
 
-      <!-- Coins left -->
       <g transform="translate(335,258)">
         <ellipse cx="0" cy="0" rx="20" ry="7" fill="url(#gold)"></ellipse>
         <rect x="-20" y="0" width="40" height="34" fill="url(#gold)"></rect>
@@ -89,7 +77,6 @@
         <ellipse cx="0" cy="12" rx="20" ry="7" fill="#ffffff" opacity="0.13"></ellipse>
       </g>
 
-      <!-- Coins right -->
       <g transform="translate(640,258)">
         <ellipse cx="0" cy="0" rx="20" ry="7" fill="url(#gold)"></ellipse>
         <rect x="-20" y="0" width="40" height="44" fill="url(#gold)"></rect>
@@ -97,13 +84,11 @@
         <ellipse cx="0" cy="14" rx="20" ry="7" fill="#ffffff" opacity="0.13"></ellipse>
       </g>
 
-      <!-- DH -->
       <text x="655" y="250" font-family="Segoe UI, Arial, sans-serif" font-size="56" font-weight="800" fill="url(#gold)">DH</text>
     </g>
 
-    <!-- Ribbon (Moroccan colors) -->
     <g transform="translate(0,0)" filter="url(#soft)">
-      <!-- green under -->
+
       <path d="M330 405
                C420 468 565 470 670 400
                C705 378 736 356 760 330
@@ -111,7 +96,7 @@
                C548 478 410 475 320 410
                C292 390 270 368 252 343
                C275 365 300 386 330 405 Z" fill="url(#ribGreen)"></path>
-      <!-- red top -->
+
       <path d="M325 385
                C420 450 570 455 685 370
                C725 340 752 315 770 292
@@ -119,7 +104,7 @@
                C565 455 420 452 333 398
                C300 378 272 355 252 330
                C275 350 298 368 325 385 Z" fill="url(#ribRed)"></path>
-      <!-- white highlight -->
+
       <path d="M335 382
                C430 430 555 432 660 360
                C694 336 721 312 740 292
@@ -131,17 +116,14 @@
 
   </g>
 
-  <!-- Ground shadow -->
   <ellipse cx="490" cy="520" rx="170" ry="22" fill="#000" opacity="0.14"></ellipse>
 
-  <!-- ===== Wordmark ===== -->
   <g transform="translate(0,0)">
     <text x="490" y="595" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="92" font-weight="800">
       <tspan fill="#9f0f10">Atlas</tspan>
       <tspan fill="#0e6a35">Bank</tspan>
     </text>
 
-    <!-- Gold underline -->
     <path d="M250 608 C380 628 600 628 730 608" fill="none" stroke="url(#gold)" stroke-width="6" stroke-linecap="round"></path>
   </g>
 

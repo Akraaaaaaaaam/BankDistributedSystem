@@ -1,0 +1,48 @@
+{% extends "accounts/base.html" %}
+{% block title %}Détails du compte{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 class="card-title">Détails du compte</h2>
+
+    <div class="grid cols-2">
+        <div><strong>Numéro :</strong></div>
+        <div>{{ account.number }}</div>
+
+        <div><strong>Solde :</strong></div>
+        <div>{{ account.balance }} MAD</div>
+
+        <div><strong>Type :</strong></div>
+        <div>{{ account.type|default:"-" }}</div>
+
+        <div><strong>Devise :</strong></div>
+        <div>{{ account.currency|default:"MAD" }}</div>
+
+        <div><strong>Agence :</strong></div>
+        <div>{{ account.branch_name|default:"-" }}</div>
+
+        <div><strong>Statut :</strong></div>
+        <div>{{ account.status|default:"ACTIVE" }}</div>
+    </div>
+
+
+{% if limits %}
+
+    <h3 class="card-title">Plafonds</h3>
+    <div class="grid cols-2">
+        <div><strong>Type client :</strong></div>
+        <div>{{ limits.client_type }}</div>
+
+        <div><strong>Plafond virement / jour :</strong></div>
+        <div>{{ limits.daily_transfer_limit }}</div>
+
+        <div><strong>Plafond retrait / jour :</strong></div>
+        <div>{{ limits.daily_debit_limit }}</div>
+    </div>
+</div>
+{% endif %}
+<br>
+<div class="row">
+    <a class="btn ghost" href="{% url 'dashboard' %}" >← Retour</a>
+</div>
+{% endblock %}

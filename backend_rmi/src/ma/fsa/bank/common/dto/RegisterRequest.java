@@ -8,7 +8,6 @@ public class RegisterRequest implements Serializable {
     private String username;
     private String plainPassword;
 
-    // NEW
     private int branchId;
     private String firstName;
     private String lastName;

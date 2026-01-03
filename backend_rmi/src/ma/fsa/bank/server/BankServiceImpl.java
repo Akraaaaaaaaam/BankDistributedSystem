@@ -13,11 +13,10 @@ import java.util.List;
 
 public class BankServiceImpl extends UnicastRemoteObject implements BankService {
 
-
     private static final double STANDARD_DAILY_TRANSFER_LIMIT = 20000.0;
     private static final double STANDARD_DAILY_DEBIT_LIMIT    = 5000.0;
-    private static final double VIP_DAILY_TRANSFER_LIMIT = 50000.0;
-    private static final double VIP_DAILY_DEBIT_LIMIT    = 20000.0;
+    private static final double VIP_DAILY_TRANSFER_LIMIT      = 50000.0;
+    private static final double VIP_DAILY_DEBIT_LIMIT         = 20000.0;
 
     private static final int MAX_ACTIVE_ACCOUNTS_PER_CLIENT = 3;
 
@@ -25,17 +24,10 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         super();
     }
 
-
-    private double coeffByClientType(String t) {
-        return 1.0;
-    }
-
-
     private String normalizeClientType(String t) {
         if (t == null) return "STANDARD";
-        String up = t.toUpperCase();
-        if (up.equals("VIP")) return "VIP";
-        return "STANDARD";
+        String up = t.trim().toUpperCase();
+        return "VIP".equals(up) ? "VIP" : "STANDARD";
     }
 
     private double dailyTransferLimitByType(String clientType) {
@@ -59,24 +51,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         }
         return "STANDARD";
     }
-
-    private int getClientIdByAccountId(Connection conn, int accountId) throws SQLException {
-        String sql = "SELECT client_id FROM account WHERE id=?";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, accountId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getInt("client_id");
-            }
-        }
-        throw new SQLException("client_id introuvable pour account_id=" + accountId);
-    }
-
-
-    private void autoMigrateClientType(Connection conn, int clientId) throws SQLException {
-
-    }
-
-
     private void requirePositiveFiniteAmount(double amount) throws RemoteException {
         if (!(amount > 0.0) || !Double.isFinite(amount)) {
             throw new RemoteException("Montant invalide");
@@ -102,23 +76,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         }
     }
 
-    private double getTodayTotalDebits(Connection conn, int accountId) throws SQLException {
-        String sql =
-                "SELECT COALESCE(SUM(amount), 0) AS total " +
-                        "FROM `transaction` " +
-                        "WHERE account_id = ? " +
-                        "  AND direction = 'DEBIT' " +
-                        "  AND DATE(created_at) = CURDATE()";
-
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, accountId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getDouble("total");
-                return 0.0;
-            }
-        }
-    }
-
     private int countActiveAccountsForClient(Connection conn, int clientId) throws SQLException {
         String sql = "SELECT COUNT(*) AS cnt FROM account WHERE client_id = ? AND status = 'ACTIVE'";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -130,13 +87,14 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         }
     }
 
-
     private AccountDTO findAccountByNumberForUpdate(Connection conn, String accountNumber) throws SQLException {
         String sql =
-                "SELECT id, account_number, balance " +
-                        "FROM account " +
-                        "WHERE account_number = ? AND status = 'ACTIVE' " +
+                "SELECT a.id, a.account_number, a.balance, a.type, a.currency, a.status, b.name AS branch_name " +
+                        "FROM account a " +
+                        "LEFT JOIN branch b ON b.id = a.branch_id " +
+                        "WHERE a.account_number = ? AND a.status = 'ACTIVE' " +
                         "FOR UPDATE";
+
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, accountNumber);
             try (ResultSet rs = ps.executeQuery()) {
@@ -144,7 +102,11 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                     return new AccountDTO(
                             rs.getInt("id"),
                             rs.getString("account_number"),
-                            rs.getDouble("balance")
+                            rs.getDouble("balance"),
+                            rs.getString("type"),
+                            rs.getString("currency"),
+                            rs.getString("status"),
+                            rs.getString("branch_name")
                     );
                 }
                 return null;
@@ -154,9 +116,11 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
     private AccountDTO findAccountByNumber(Connection conn, String accountNumber) throws SQLException {
         String sql =
-                "SELECT id, account_number, balance " +
-                        "FROM account " +
-                        "WHERE account_number = ? AND status = 'ACTIVE'";
+                "SELECT a.id, a.account_number, a.balance, a.type, a.currency, a.status, b.name AS branch_name " +
+                        "FROM account a " +
+                        "LEFT JOIN branch b ON b.id = a.branch_id " +
+                        "WHERE a.account_number = ? AND a.status = 'ACTIVE'";
+
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, accountNumber);
             try (ResultSet rs = ps.executeQuery()) {
@@ -164,7 +128,11 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                     return new AccountDTO(
                             rs.getInt("id"),
                             rs.getString("account_number"),
-                            rs.getDouble("balance")
+                            rs.getDouble("balance"),
+                            rs.getString("type"),
+                            rs.getString("currency"),
+                            rs.getString("status"),
+                            rs.getString("branch_name")
                     );
                 }
                 return null;
@@ -191,12 +159,14 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             String description
     ) throws SQLException {
 
-        String sql = "INSERT INTO `transaction` " +
-                "(account_id, counterpart_account_id, type_code, direction, amount, balance_after, status, description) " +
-                "VALUES (?, ?, ?, ?, ?, ?, 'SUCCESS', ?)";
+        String sql =
+                "INSERT INTO `transaction` " +
+                        "(account_id, counterpart_account_id, type_code, direction, amount, balance_after, status, description) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, 'SUCCESS', ?)";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
+
             if (counterpartAccountId != null) ps.setInt(2, counterpartAccountId);
             else ps.setNull(2, Types.INTEGER);
 
@@ -219,14 +189,13 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                 if (rs.next()) count = rs.getInt("cnt");
             }
         }
+
         int index = count + 1;
         String suffix = String.format("%03d", index);
 
         return "ACC-" + String.format("%03d", branchId) + "-" +
                 String.format("%04d", clientId) + "-" + suffix;
     }
-
-
 
     @Override
     public List<UserDTO> listUsers() throws RemoteException {
@@ -239,16 +208,14 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
             while (rs.next()) {
                 int id = rs.getInt("id");
-                Object clientObj = rs.getObject("client_id");
-                Integer clientId = (clientObj != null) ? rs.getInt("client_id") : null;
 
+                Integer clientId = (rs.getObject("client_id") != null) ? rs.getInt("client_id") : null;
                 String username = rs.getString("username");
                 String role = rs.getString("role");
                 boolean active = rs.getBoolean("is_active");
 
                 boolean isSuperAdmin = rs.getBoolean("is_super_admin");
-                Object createdByObj = rs.getObject("created_by");
-                Integer createdBy = (createdByObj != null) ? rs.getInt("created_by") : null;
+                Integer createdBy = (rs.getObject("created_by") != null) ? rs.getInt("created_by") : null;
 
                 result.add(new UserDTO(id, clientId, username, role, active, isSuperAdmin, createdBy));
             }
@@ -268,9 +235,8 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             conn.setAutoCommit(false);
 
             try {
-                String sqlCheck = "SELECT COUNT(*) FROM `user` WHERE username = ?";
-                try (PreparedStatement ps = conn.prepareStatement(sqlCheck)) {
-                    ps.setString(1, username);
+                try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM `user` WHERE username = ?")) {
+                    ps.setString(1, username.trim());
                     try (ResultSet rs = ps.executeQuery()) {
                         rs.next();
                         if (rs.getInt(1) > 0) {
@@ -288,7 +254,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
                 int userId;
                 try (PreparedStatement ps = conn.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS)) {
-                    ps.setString(1, username);
+                    ps.setString(1, username.trim());
                     ps.setString(2, passwordHash);
                     ps.executeUpdate();
 
@@ -302,7 +268,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                 }
 
                 conn.commit();
-                return new UserDTO(userId, null, username, "ADMIN", true);
+                return new UserDTO(userId, null, username.trim(), "ADMIN", true);
 
             } catch (RemoteException e) {
                 try { conn.rollback(); } catch (SQLException ignored) {}
@@ -335,18 +301,15 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         }
     }
 
-
-
     @Override
     public RegisterResponse registerUser(RegisterRequest req) throws RemoteException {
         if (req == null) return new RegisterResponse(false, "Requête invalide");
 
         String username = (req.getUsername() == null) ? null : req.getUsername().trim();
-        String password = (req.getPlainPassword() == null) ? null : req.getPlainPassword();
+        String password = req.getPlainPassword();
         String firstName = (req.getFirstName() == null) ? null : req.getFirstName().trim();
         String lastName  = (req.getLastName() == null) ? null : req.getLastName().trim();
         String cin       = (req.getCin() == null) ? null : req.getCin().trim();
-
 
         String email   = (req.getEmail() == null || "-".equals(req.getEmail().trim())) ? null : req.getEmail().trim();
         String phone   = (req.getPhone() == null || "-".equals(req.getPhone().trim())) ? null : req.getPhone().trim();
@@ -366,7 +329,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             conn.setAutoCommit(false);
 
             try {
-
                 try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM `user` WHERE username=?")) {
                     ps.setString(1, username);
                     try (ResultSet rs = ps.executeQuery()) {
@@ -377,7 +339,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                         }
                     }
                 }
-
 
                 try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM client WHERE cin=?")) {
                     ps.setString(1, cin);
@@ -390,7 +351,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                     }
                 }
 
-
                 try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM branch WHERE id=?")) {
                     ps.setInt(1, branchId);
                     try (ResultSet rs = ps.executeQuery()) {
@@ -401,7 +361,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                         }
                     }
                 }
-
 
                 int clientId;
                 String sqlClient =
@@ -427,7 +386,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                     }
                 }
 
-
                 String hash = hashPassword(password);
                 String sqlUser =
                         "INSERT INTO `user` (client_id, username, password_hash, role, is_active) " +
@@ -439,7 +397,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                     ps.setString(3, hash);
                     ps.executeUpdate();
                 }
-
 
                 conn.commit();
                 return new RegisterResponse(true, "Inscription réussie. Connectez-vous pour créer votre compte bancaire.");
@@ -456,11 +413,11 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         }
     }
 
-
     @Override
     public UserDTO authenticate(String username, String password) throws RemoteException {
-        String sql = "SELECT id, client_id, username, password_hash, role, is_active, is_super_admin, created_by " +
-                "FROM `user` WHERE username = ?";
+        String sql =
+                "SELECT id, client_id, username, password_hash, role, is_active, is_super_admin, created_by " +
+                        "FROM `user` WHERE username = ?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -481,8 +438,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                 String role = rs.getString("role");
 
                 boolean isSuperAdmin = rs.getBoolean("is_super_admin");
-                Object createdByObj = rs.getObject("created_by");
-                Integer createdBy = (createdByObj != null) ? rs.getInt("created_by") : null;
+                Integer createdBy = (rs.getObject("created_by") != null) ? rs.getInt("created_by") : null;
 
                 return new UserDTO(id, clientId, username, role, true, isSuperAdmin, createdBy);
             }
@@ -491,7 +447,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             throw new RemoteException("Erreur lors de l'authentification", e);
         }
     }
-
 
 
     @Override
@@ -526,8 +481,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
                 insertTransaction(conn, account.getId(), null, "DEPOSIT", "CREDIT", amount, newBalance, "Depot via RMI");
 
-
-
                 conn.commit();
                 return true;
 
@@ -555,8 +508,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                 if (account == null) { conn.rollback(); return false; }
 
                 String clientType = getClientTypeByAccountId(conn, account.getId());
-                double dailyDebitLimit = dailyDebitLimitByType(clientType); // ici: plafond retrait
-
+                double dailyDebitLimit = dailyDebitLimitByType(clientType);
 
                 double alreadyWithdrawalToday = getTodayDebitSum(conn, account.getId(), "WITHDRAWAL");
                 if (alreadyWithdrawalToday + amount > dailyDebitLimit) {
@@ -594,7 +546,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         }
     }
 
-
     @Override
     public boolean transfer(String fromAccount, String toAccount, double amount) throws RemoteException {
         requirePositiveFiniteAmount(amount);
@@ -605,7 +556,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             conn.setAutoCommit(false);
 
             try {
-
                 String a = fromAccount.compareTo(toAccount) <= 0 ? fromAccount : toAccount;
                 String b = fromAccount.compareTo(toAccount) <= 0 ? toAccount : fromAccount;
 
@@ -621,7 +571,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
                 String clientType = getClientTypeByAccountId(conn, source.getId());
                 double transferLimit = dailyTransferLimitByType(clientType);
-
 
                 double alreadyTransferToday = getTodayDebitSum(conn, source.getId(), "TRANSFER");
                 if (alreadyTransferToday + amount > transferLimit) { conn.rollback(); return false; }
@@ -675,7 +624,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         List<TransactionDTO> result = new ArrayList<>();
 
         try (Connection conn = DBConnection.getConnection()) {
-
             AccountDTO account = findAccountByNumber(conn, accountNumber);
             if (account == null) throw new RemoteException("Compte introuvable : " + accountNumber);
 
@@ -713,22 +661,31 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         List<AccountDTO> result = new ArrayList<>();
 
         try (Connection conn = DBConnection.getConnection()) {
+
             String sql =
-                    "SELECT id, account_number, balance " +
-                            "FROM account WHERE client_id = ? AND status = 'ACTIVE'";
+                    "SELECT a.id, a.account_number, a.balance, a.type, a.currency, a.status, b.name AS branch_name " +
+                            "FROM account a " +
+                            "LEFT JOIN branch b ON b.id = a.branch_id " +
+                            "WHERE a.client_id = ? AND a.status = 'ACTIVE'";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, clientId);
+
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         result.add(new AccountDTO(
                                 rs.getInt("id"),
                                 rs.getString("account_number"),
-                                rs.getDouble("balance")
+                                rs.getDouble("balance"),
+                                rs.getString("type"),
+                                rs.getString("currency"),
+                                rs.getString("status"),
+                                rs.getString("branch_name")
                         ));
                     }
                 }
             }
+
             return result;
 
         } catch (SQLException e) {
@@ -749,6 +706,102 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         }
     }
 
+    @Override
+    public boolean adminDeleteUser(int actorUserId, int targetUserId) throws RemoteException {
+        if (actorUserId <= 0 || targetUserId <= 0) return false;
+        if (actorUserId == targetUserId) return false;
+
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+
+                try (PreparedStatement psActor = conn.prepareStatement(
+                        "SELECT role, is_super_admin, is_active FROM `user` WHERE id=? FOR UPDATE"
+                )) {
+                    psActor.setInt(1, actorUserId);
+                    try (ResultSet rsA = psActor.executeQuery()) {
+                        if (!rsA.next()) { conn.rollback(); return false; }
+
+                        String actorRole = rsA.getString("role");
+                        boolean actorSuper = rsA.getBoolean("is_super_admin");
+                        boolean actorActive = rsA.getBoolean("is_active");
+
+                        if (!actorActive || !"ADMIN".equalsIgnoreCase(actorRole) || !actorSuper) {
+                            conn.rollback();
+                            return false;
+                        }
+                    }
+                }
+
+                String targetRole;
+                Integer clientId;
+                boolean targetIsSuper;
+
+                try (PreparedStatement psT = conn.prepareStatement(
+                        "SELECT role, client_id, is_super_admin FROM `user` WHERE id=? FOR UPDATE"
+                )) {
+                    psT.setInt(1, targetUserId);
+                    try (ResultSet rsT = psT.executeQuery()) {
+                        if (!rsT.next()) { conn.rollback(); return false; }
+
+                        targetRole = rsT.getString("role");
+                        clientId = (rsT.getObject("client_id") != null) ? rsT.getInt("client_id") : null;
+                        targetIsSuper = rsT.getBoolean("is_super_admin");
+                    }
+                }
+
+                if (targetIsSuper) { conn.rollback(); return false; }
+
+                if ("CLIENT".equalsIgnoreCase(targetRole) && clientId != null) {
+
+                    try (PreparedStatement psDelTx = conn.prepareStatement(
+                            "DELETE FROM `transaction` " +
+                                    "WHERE account_id IN (SELECT id FROM account WHERE client_id=?) " +
+                                    "   OR counterpart_account_id IN (SELECT id FROM account WHERE client_id=?)"
+                    )) {
+                        psDelTx.setInt(1, clientId);
+                        psDelTx.setInt(2, clientId);
+                        psDelTx.executeUpdate();
+                    }
+
+                    try (PreparedStatement psDelAcc = conn.prepareStatement(
+                            "DELETE FROM account WHERE client_id=?"
+                    )) {
+                        psDelAcc.setInt(1, clientId);
+                        psDelAcc.executeUpdate();
+                    }
+
+                    try (PreparedStatement psDelClient = conn.prepareStatement(
+                            "DELETE FROM client WHERE id=?"
+                    )) {
+                        psDelClient.setInt(1, clientId);
+                        psDelClient.executeUpdate();
+                    }
+                }
+
+                int affected;
+                try (PreparedStatement psDelUser = conn.prepareStatement(
+                        "DELETE FROM `user` WHERE id=?"
+                )) {
+                    psDelUser.setInt(1, targetUserId);
+                    affected = psDelUser.executeUpdate();
+                }
+
+                conn.commit();
+                return affected > 0;
+
+            } catch (Exception e) {
+                conn.rollback();
+                throw new RemoteException("Erreur adminDeleteUser: " + e.getMessage(), e);
+            } finally {
+                try { conn.setAutoCommit(true); } catch (SQLException ignored) {}
+            }
+
+        } catch (SQLException e) {
+            throw new RemoteException("Erreur SQL adminDeleteUser", e);
+        }
+    }
 
 
     @Override
@@ -929,14 +982,16 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             conn.setAutoCommit(false);
 
             try {
-                try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM branch WHERE id = ?")) {
+
+                String branchName = null;
+                try (PreparedStatement ps = conn.prepareStatement("SELECT name FROM branch WHERE id = ?")) {
                     ps.setInt(1, branchId);
                     try (ResultSet rs = ps.executeQuery()) {
-                        rs.next();
-                        if (rs.getInt(1) == 0) {
+                        if (!rs.next()) {
                             conn.rollback();
                             throw new RemoteException("Agence introuvable: " + branchId);
                         }
+                        branchName = rs.getString("name");
                     }
                 }
 
@@ -954,8 +1009,9 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
                 String accountNumber = generateNextAccountNumber(conn, clientId, branchId);
 
-                String sql = "INSERT INTO account (client_id, branch_id, account_number, type, currency, balance, status) " +
-                        "VALUES (?, ?, ?, ?, ?, 0.0, 'ACTIVE')";
+                String sql =
+                        "INSERT INTO account (client_id, branch_id, account_number, type, currency, balance, status) " +
+                                "VALUES (?, ?, ?, ?, ?, 0.0, 'ACTIVE')";
 
                 int accountId;
                 try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -976,7 +1032,8 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                 }
 
                 conn.commit();
-                return new AccountDTO(accountId, accountNumber, 0.0);
+
+                return new AccountDTO(accountId, accountNumber, 0.0, t, cur, "ACTIVE", branchName);
 
             } catch (RemoteException e) {
                 try { conn.rollback(); } catch (SQLException ignored) {}
@@ -992,9 +1049,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         }
     }
 
-    // ==============================
-    // Profils + plafonds
-    // ==============================
 
     @Override
     public String getClientType(int clientId) throws RemoteException {
@@ -1049,9 +1103,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
         }
     }
 
-    // ==============================
-    // Mon compte (profil user)
-    // ==============================
 
     private String trimOrNull(String s) {
         if (s == null) return null;
@@ -1061,7 +1112,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
 
     private boolean isValidUsername(String u) {
         if (u == null) return false;
-        // même règle que ton form Django (3-50 lettres/chiffres/._-)
         return u.matches("^[a-zA-Z0-9_.-]{3,50}$");
     }
 
@@ -1123,7 +1173,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             conn.setAutoCommit(false);
 
             try {
-
                 Integer clientId = null;
                 String currentUsername = null;
 
@@ -1139,7 +1188,6 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                     }
                 }
 
-                // unicité username si changé
                 if (currentUsername == null || !currentUsername.equals(newUsername)) {
                     try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM `user` WHERE username=? AND id<>?")) {
                         ps.setString(1, newUsername);
@@ -1167,9 +1215,8 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                     String phone = trimOrNull(update.getPhone());
                     String address = trimOrNull(update.getAddress());
 
-                    String sqlGetClient = "SELECT first_name, last_name FROM client WHERE id=?";
                     String curFn = null, curLn = null;
-                    try (PreparedStatement ps = conn.prepareStatement(sqlGetClient)) {
+                    try (PreparedStatement ps = conn.prepareStatement("SELECT first_name, last_name FROM client WHERE id=?")) {
                         ps.setInt(1, clientId);
                         try (ResultSet rs = ps.executeQuery()) {
                             if (rs.next()) {
@@ -1181,8 +1228,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
                     if (fn == null) fn = curFn;
                     if (ln == null) ln = curLn;
 
-                    String sqlUpd =
-                            "UPDATE client SET first_name=?, last_name=?, email=?, phone=?, address=? WHERE id=?";
+                    String sqlUpd = "UPDATE client SET first_name=?, last_name=?, email=?, phone=?, address=? WHERE id=?";
 
                     try (PreparedStatement ps = conn.prepareStatement(sqlUpd)) {
                         ps.setString(1, fn);
@@ -1224,8 +1270,7 @@ public class BankServiceImpl extends UnicastRemoteObject implements BankService 
             conn.setAutoCommit(false);
 
             try {
-
-                boolean actorIsSuper = false;
+                boolean actorIsSuper;
                 try (PreparedStatement ps = conn.prepareStatement("SELECT is_super_admin FROM `user` WHERE id=?")) {
                     ps.setInt(1, actorUserId);
                     try (ResultSet rs = ps.executeQuery()) {

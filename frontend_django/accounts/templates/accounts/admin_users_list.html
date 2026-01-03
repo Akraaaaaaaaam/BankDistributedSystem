@@ -35,15 +35,12 @@
             {% endif %}
         </div>
     </div>
-
-
 </div>
 
 <div class="spacer"></div>
 
 <div class="card">
     <h2 class="card-title">Recherche par Filtres</h2>
-
 
     <form method="get" class="row" novalidate>
         <div class="field">
@@ -81,11 +78,9 @@
 <div class="card">
     <h2 class="card-title">Liste des utilisateurs</h2>
 
-
     <table class="table">
         <thead>
         <tr>
-
             <th>Username</th>
             <th>Rôle</th>
             <th>Statut</th>
@@ -104,31 +99,48 @@
                 <span class="badge">Inactif</span>
                 {% endif %}
             </td>
-            <td style="white-space:nowrap;">
+            <td style="white-space:nowrap; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+
                 {% if u.client_id %}
                 <a class="btn ghost" href="{% url 'admin_client_accounts' u.client_id %}">Comptes</a>
                 {% endif %}
 
                 {% if u.active %}
-                <a class="btn danger" href="{% url 'admin_set_user_active' u.id %}?action=deactivate"
-                   data-confirm="Désactiver cet utilisateur ?">Désactiver</a>
+                <form method="post" action="{% url 'admin_set_user_active' u.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="deactivate">
+                    <button class="btn danger" type="submit" data-confirm="Désactiver cet utilisateur ?">
+                        Désactiver
+                    </button>
+                </form>
                 {% else %}
-                <a class="btn primary" href="{% url 'admin_set_user_active' u.id %}?action=activate"
-                   data-confirm="Activer cet utilisateur ?">Activer</a>
+                <form method="post" action="{% url 'admin_set_user_active' u.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="activate">
+                    <button class="btn primary" type="submit" data-confirm="Activer cet utilisateur ?">
+                        Activer
+                    </button>
+                </form>
                 {% endif %}
 
-                {# ✅ Reset password (super-admin uniquement) #}
                 {% if user.is_super_admin %}
                 <a class="btn ghost" href="{% url 'admin_reset_password' u.id %}"
                    data-confirm="Réinitialiser le mot de passe de cet utilisateur ?">
                     Reset password
                 </a>
+                <form method="post" action="{% url 'admin_delete_user' u.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button class="btn danger"
+                            onclick="return confirm('Supprimer définitivement cet utilisateur ? Cette action est irréversible !');">
+                        Supprimer
+                    </button>
+                </form>
+
                 {% endif %}
             </td>
-
         </tr>
         {% empty %}
-        <tr><td colspan="6">Aucun utilisateur trouvé.</td></tr>
+        <tr><td colspan="4">Aucun utilisateur trouvé.</td></tr>
         {% endfor %}
         </tbody>
     </table>

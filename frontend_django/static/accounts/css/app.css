@@ -41,7 +41,6 @@ main.container{ flex:1; padding:22px 0 40px; }
 
 .muted{ color:var(--muted); }
 
-/* NAV */
 .nav{
   position:sticky; top:0; z-index:50;
   backdrop-filter: blur(14px);
@@ -58,7 +57,6 @@ main.container{ flex:1; padding:22px 0 40px; }
 .brand-tag{ font-size:12px; color:var(--muted); margin-top:-2px; }
 .nav-actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 
-/* CHIP */
 .chip{
   display:flex; align-items:center; gap:10px;
   padding:8px 12px;
@@ -70,7 +68,6 @@ main.container{ flex:1; padding:22px 0 40px; }
 .chip-text{ font-weight:700; font-size:13px; }
 .chip-role{ font-size:12px; color:var(--muted); }
 
-/* BUTTONS */
 .btn{
   display:inline-flex; align-items:center; justify-content:center;
   height:38px;
@@ -91,7 +88,6 @@ main.container{ flex:1; padding:22px 0 40px; }
 .btn.danger{ background: rgba(251,113,133,.16); border-color: rgba(251,113,133,.35); }
 .btn.ghost{ background: transparent; }
 
-/* CARDS */
 .card{
   background: var(--panel);
   border:1px solid var(--border);
@@ -110,7 +106,6 @@ main.container{ flex:1; padding:22px 0 40px; }
   margin-bottom:10px;
 }
 
-/* LAYOUT */
 .grid{ display:grid; gap:14px; }
 .grid.cols-2{ grid-template-columns: repeat(2, minmax(0,1fr)); }
 .grid.cols-3{ grid-template-columns: repeat(3, minmax(0,1fr)); }
@@ -119,7 +114,6 @@ main.container{ flex:1; padding:22px 0 40px; }
 .row{ display:flex; gap:12px; flex-wrap:wrap; }
 .row > *{ flex:1; min-width: 220px; }
 
-/* TABLE */
 .table{
   width:100%;
   border-collapse:separate;
@@ -140,7 +134,6 @@ main.container{ flex:1; padding:22px 0 40px; }
 }
 .table tr:hover td{ background: rgba(255,255,255,.03); }
 
-/* FORMS */
 .field{ display:flex; flex-direction:column; gap:6px; }
 .input, select{
   height:40px;
@@ -156,7 +149,6 @@ main.container{ flex:1; padding:22px 0 40px; }
   box-shadow: 0 0 0 6px rgba(79,140,255,.12);
 }
 
-/* TOASTS */
 .toasts{ display:flex; flex-direction:column; gap:10px; margin: 0 0 14px; }
 .toast{
   display:flex; gap:12px; align-items:flex-start;
@@ -177,7 +169,6 @@ main.container{ flex:1; padding:22px 0 40px; }
   to{ opacity:1; transform: translateY(0); }
 }
 
-/* BADGES */
 .badge{
   display:inline-flex; align-items:center; gap:8px;
   padding:6px 10px;
@@ -188,11 +179,9 @@ main.container{ flex:1; padding:22px 0 40px; }
   color: rgba(255,255,255,.85);
 }
 
-/* FOOTER */
 .footer{ border-top:1px solid var(--border); padding:18px 0; background: rgba(11,18,32,.55); }
 .footer-inner{ display:flex; justify-content:space-between; gap:12px; color:var(--muted); font-size:12px; }
 
-/* KPI + Charts (admin_stats) */
 .kpi-grid{
   display:grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -217,7 +206,6 @@ main.container{ flex:1; padding:22px 0 40px; }
 .chart-card .chart-wrap{ height: 320px; }
 .chart-card canvas{ width: 100% !important; height: 100% !important; }
 
-/* Filter card */
 .filter-card { padding: 16px; margin:14px 0; }
 .filter-head { margin-bottom: 10px; }
 .form-grid{
@@ -236,7 +224,6 @@ main.container{ flex:1; padding:22px 0 40px; }
   .filter-actions{ flex-wrap:wrap; }
 }
 
-/* Pager */
 .pager{
   margin-top:12px;
   display:flex;
@@ -247,7 +234,6 @@ main.container{ flex:1; padding:22px 0 40px; }
 }
 .pager-actions{ display:flex; gap:10px; flex-wrap:wrap; }
 
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce){
   *{ animation: none !important; transition: none !important; }
 }
@@ -275,7 +261,7 @@ main.container{ flex:1; padding:22px 0 40px; }
   gap: 10px;
   text-decoration:none;
   color: var(--text);
-  min-width: 0; /* important */
+  min-width: 0;
 }
 
 .brand-logo{
@@ -295,23 +281,18 @@ main.container{ flex:1; padding:22px 0 40px; }
   gap: 10px;
   flex: 1;
   min-width: 0;
-  flex-wrap: nowrap; /* desktop */
+  flex-wrap: nowrap;
 }
-/* =========================
-   NAVBAR: align + tailles cohérentes
-   (n'affecte pas les forms)
-   ========================= */
+
 
 .nav .nav-inner{
   align-items: center;
 }
 
-/* Tous les éléments du bloc actions doivent avoir la même hauteur */
 .nav-actions{
   align-items: center;
 }
 
-/* Cible les liens du menu dans la navbar (même si ce ne sont pas des .btn) */
 .nav-actions a,
 .nav-actions button{
   height: 38px;
@@ -319,13 +300,12 @@ main.container{ flex:1; padding:22px 0 40px; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;          /* ✅ évite texte plus haut que le bouton */
+  line-height: 1;
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
 }
 
-/* Si tes "boutons menu" ont une classe spéciale (ex: .nav-link), ça les corrige aussi */
 .nav-actions .nav-link{
   height: 38px;
   padding: 0 14px;
@@ -336,56 +316,44 @@ main.container{ flex:1; padding:22px 0 40px; }
   font-size: 13px;
 }
 
-/* Le badge ADMIN (chip) : même hauteur visuelle */
 .nav-actions .chip{
   height: 38px;
   padding: 0 12px;
   line-height: 1;
 }
-/* =========================
-   BANKING COLOR OVERRIDE
-   (no layout / no structure change)
-   ========================= */
+
 
 :root{
-  /* Fond & surfaces */
+
   --bg: #f4f6f9;
   --panel: #ffffff;
   --panel-2: #f8fafc;
   --border: #e2e8f0;
 
-  /* Texte */
   --text: #0f172a;
   --muted: #64748b;
 
-  /* Couleurs métier */
-  --primary: #1e3a8a;      /* bleu banque */
+  --primary: #1e3a8a;
   --primary-soft: #e8edff;
   --danger: #b91c1c;
 
-  /* Radius conservé */
   --r: 16px;
 }
 
-/* Fond global */
 body{
   background: var(--bg);
   color: var(--text);
 }
 
-/* =========================
-   NAVBAR (couleur seulement)
-   ========================= */
 
 .nav{
-  background: #0b1f3a;           /* navy */
+  background: #0b1f3a;
   border-bottom: 1px solid rgba(255,255,255,.08);
 }
 
 .brand-name{ color: #ffffff; }
 .brand-tag{ color: rgba(255,255,255,.75); }
 
-/* chip utilisateur */
 .chip{
   background: rgba(255,255,255,.08);
   border-color: rgba(255,255,255,.18);
@@ -393,9 +361,6 @@ body{
 .chip-text{ color: #ffffff; }
 .chip-role{ color: rgba(255,255,255,.8); }
 
-/* =========================
-   BUTTONS (couleur seulement)
-   ========================= */
 
 .btn{
   background: #ffffff;
@@ -442,9 +407,6 @@ body{
   background: #991b1b;
 }
 
-/* =========================
-   CARDS & TABLES
-   ========================= */
 
 .card{
   background: var(--panel);
@@ -465,9 +427,6 @@ body{
   background: #f8fafc;
 }
 
-/* =========================
-   INPUTS (couleur seulement)
-   ========================= */
 
 .input, select, textarea{
   background: #ffffff;
@@ -482,9 +441,6 @@ textarea:focus{
   box-shadow: 0 0 0 3px rgba(30,58,138,.15);
 }
 
-/* =========================
-   TOASTS
-   ========================= */
 
 .toast{
   background: #ffffff;
@@ -495,21 +451,17 @@ textarea:focus{
 .toast.error{ border-left-color: var(--danger); }
 .toast.warning{ border-left-color: #a16207; }
 
-/* =========================
-   FOOTER
-   ========================= */
 
 .footer{
   background: #ffffff;
   border-top-color: var(--border);
 }
-/* TEST FORCE NAV COLOR */
 .nav { background: #0b1f3a !important; }
 .nav .btn { color: #fff !important; border-color: rgba(255,255,255,.25) !important; }
 .toast {
-  color: #111;               /* texte lisible */
-  background: #fff;          /* fond blanc */
-  border: 1px solid #e5e7eb; /* bord léger */
+  color: #111;
+  background: #fff;
+  border: 1px solid #e5e7eb;
   box-shadow: 0 10px 20px rgba(0,0,0,.08);
 }
 
@@ -526,7 +478,7 @@ input, select, textarea {
 
 input::placeholder,
 textarea::placeholder {
-  color: #6b7280; /* gris lisible */
+  color: #6b7280;
   opacity: 1;
 }
 table { color: #111; }
@@ -544,19 +496,17 @@ tbody tr:hover { background: #f1f5f9; }
 body { color: var(--text); background: var(--bg); }
 .card, .toast, .table-wrap { background: var(--surface); border: 1px solid var(--border); }
 .muted { color: var(--muted); }
-/* Pills/Badges dans le tableau users (Rôle / Statut) */
 .users-table .pill,
 .users-table .badge,
 .users-table .chip,
 td .pill,
 td .badge,
 td .chip {
-  color: #0f172a !important;          /* texte visible */
-  background: #f1f5f9 !important;     /* fond léger */
+  color: #0f172a !important;
+  background: #f1f5f9 !important;
   border: 1px solid #cbd5e1 !important;
 }
 
-/* (optionnel) variantes statut */
 .status-active {
   color: #166534 !important;
   background: #dcfce7 !important;

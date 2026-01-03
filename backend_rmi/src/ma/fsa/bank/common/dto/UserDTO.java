@@ -11,7 +11,6 @@ public class UserDTO implements Serializable {
     private String role;
     private boolean active;
 
-    // NEW
     private boolean superAdmin;
     private Integer createdBy;
 

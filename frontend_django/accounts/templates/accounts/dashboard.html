@@ -32,6 +32,7 @@
             <td>{{ acc.balance }}</td>
             <td style="white-space:nowrap;">
                 <a class="btn primary" href="{% url 'transactions' acc.number %}">Transactions</a>
+                <a class="btn ghost" href="{% url 'account_details' acc.number %}">Détails</a>
             </td>
         </tr>
         {% endfor %}

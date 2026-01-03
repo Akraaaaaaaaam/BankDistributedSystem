@@ -33,7 +33,6 @@ class RegisterForm(forms.Form):
         widget=forms.PasswordInput(attrs={"class": "input", "autocomplete": "new-password"}),
     )
 
-    # NEW — infos client
     first_name = forms.CharField(
         max_length=100,
         label="Prénom",
@@ -81,7 +80,6 @@ class RegisterForm(forms.Form):
         branches = branches or []
         choices = [("", "-- Sélectionnez une agence --")]
         for b in branches:
-            # b attendu: {"id":..,"code":..,"name":..,"city":..}
             choices.append((str(b["id"]), f'{b.get("code")} - {b.get("name")} ({b.get("city")})'))
         self.fields["branch_id"].choices = choices
 
@@ -97,7 +95,6 @@ class RegisterForm(forms.Form):
         if p1 != p2:
             raise forms.ValidationError("Les mots de passe ne correspondent pas.")
 
-        # branch obligatoire
         branch_id = (cleaned.get("branch_id") or "").strip()
         if not branch_id:
             raise forms.ValidationError("Veuillez sélectionner une agence.")
